@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartPlace — Spot Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#f5f4f0;--base:#ffffff;--raised:#fafaf8;--inset:#eeecea;--stroke:#e3e1dc;--stroke2:#d0cdc7;--ink:#1a1917;--ink2:#5c5954;--ink3:#9b9690;--ink4:#c8c4be;--green:#1a7a4a;--green-bg:#edf7f2;--green-bd:#b8deca;--green-lt:rgba(26,122,74,.12);--amber:#b45309;--amber-bg:#fffbeb;--amber-bd:#fcd34d;--red:#be123c;--red-bg:#fff1f2;--red-bd:#fda4af;--blue:#1d4ed8;--blue-bg:#eff6ff;--blue-bd:#bfdbfe;--t-xs:10px;--t-sm:12px;--t-md:14px;--t-lg:17px;--t-xl:22px;--t-2xl:30px;--t-3xl:44px;--r-xs:3px;--r-sm:7px;--r:11px;--r-lg:15px;--sh-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);--sh:0 2px 8px rgba(0,0,0,.07),0 1px 3px rgba(0,0,0,.04);--sh-lg:0 8px 28px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.05);--sidebar-w:216px;--topbar-h:66px;--serif:'Instrument Serif',Georgia,serif;--sans:'Geist',system-ui,sans-serif;--mono:'Geist Mono','Courier New',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:var(--t-md);line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ── Page background gradient ── */
+#page-home{background:radial-gradient(ellipse 120% 60% at 60% 0%,rgba(26,122,74,.06) 0%,transparent 70%),linear-gradient(180deg,#f7f6f2 0%,#f2f1ec 100%);}
+
+/* ── FLOATING TOPBAR ── */
+.topbar-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:8px 16px 0;}
+.topbar{
+  background:rgba(252,251,248,.94);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid rgba(227,225,220,.8);
+  border-radius:var(--r-lg);
+  height:44px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 6px 0 12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.05);
+  gap:8px;
+  position:relative;
+  overflow:visible;
+}
+.topbar-left{display:flex;align-items:center;gap:3px}
+.logo{display:flex;align-items:baseline;gap:6px;text-decoration:none;padding:3px 8px 3px 2px;border-radius:var(--r-sm)}
+.logo:hover .logo-name{opacity:.75}
+.logo-name{font-family:var(--serif);font-size:16px;color:var(--ink);letter-spacing:-.02em;transition:opacity .15s}
+.logo-name em{font-style:italic;color:var(--green)}
+.topbar-divider{width:1px;height:18px;background:var(--stroke);margin:0 6px;flex-shrink:0}
+.topnav{display:flex;align-items:center;gap:0}
+.topnav-btn{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--ink3);padding:4px 9px;border:none;background:none;cursor:pointer;border-radius:var(--r-sm);transition:color .12s,background .12s;white-space:nowrap;line-height:1}
+.topnav-btn:hover{color:var(--ink2);background:var(--inset)}
+.topnav-btn.active{color:var(--ink);background:var(--inset)}
+.topbar-right{display:flex;align-items:center;gap:5px}
+.conn-pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--ink2);background:var(--raised);border:1px solid var(--stroke);border-radius:99px;padding:4px 10px 4px 7px;cursor:pointer;transition:border-color .15s;white-space:nowrap}
+.conn-pill:hover{border-color:var(--stroke2)}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--ink4);flex-shrink:0;transition:background .3s}
+.cdot.live{background:var(--green);box-shadow:0 0 0 2px rgba(26,122,74,.2);animation:blink 2s infinite}
+.cdot.sim{background:var(--amber)} .cdot.error{background:var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.mode-pill{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;border-radius:99px;padding:3px 8px;border:1px solid;line-height:1;white-space:nowrap}
+.mode-pill.sim{color:var(--amber);background:var(--amber-bg);border-color:var(--amber-bd)}
+.mode-pill.live-mode{color:var(--green);background:var(--green-bg);border-color:var(--green-bd)}
+.mode-pill.manual-mode{color:var(--ink2);background:var(--inset);border-color:var(--stroke)}
+.hamburger{display:flex;flex-direction:column;gap:4px;cursor:pointer;padding:7px;border:none;background:none;border-radius:var(--r-sm);flex-shrink:0}
+.hamburger:hover{background:var(--inset)}
+.hamburger span{display:block;width:18px;height:1.5px;background:var(--ink2);border-radius:2px;transition:all .2s}
+.hamburger.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+
+/* ── pages dropdown ── */
+.pages-wrap{position:relative;display:flex;align-items:center;}
+.pages-btn{display:flex;align-items:center;gap:5px;font-family:var(--sans);font-size:12px;font-weight:500;color:var(--ink2);background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;transition:background .12s,border-color .12s;white-space:nowrap;line-height:1;height:28px;}
+.pages-btn:hover{background:var(--inset);border-color:var(--stroke2)}
+.pages-btn.open{background:var(--inset);border-color:var(--stroke2)}
+.pages-chevron{font-size:9px;color:var(--ink3);transition:transform .18s;display:inline-block}
+.pages-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:190px;background:#fff;border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--sh-lg);z-index:9999;padding:5px;flex-direction:column;gap:1px;}
+.pages-menu.open{display:flex}
+.pages-menu-item{display:flex;align-items:center;gap:9px;font-family:var(--sans);font-size:var(--t-sm);font-weight:500;color:var(--ink2);padding:9px 12px;border:none;background:none;cursor:pointer;border-radius:var(--r-sm);text-align:left;width:100%;transition:background .1s,color .1s;white-space:nowrap}
+.pages-menu-item:hover{background:var(--inset);color:var(--ink)}
+.pages-menu-item.active{color:var(--green);background:var(--green-bg)}
+.pages-menu-icon{font-size:13px;width:18px;text-align:center;flex-shrink:0}
+.pages-menu-divider{height:1px;background:var(--stroke);margin:4px 8px}
+@media(max-width:600px){.topnav .topnav-btn:not(#tnav-home):not(#tnav-checker){display:none}}
+.app-shell{padding-top:var(--topbar-h);display:flex;min-height:100vh;}
+/* sidebar overlay — dims content when sidebar is open */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(20,20,18,.25);z-index:35;cursor:pointer;}
+.sidebar-overlay.open{display:block;}
+.sidebar{
+  position:fixed;top:var(--topbar-h);left:0;bottom:0;
+  width:var(--sidebar-w);
+  background:var(--base);
+  border-right:1px solid var(--stroke);
+  overflow-y:auto;overflow-x:hidden;
+  z-index:40;
+  display:flex;flex-direction:column;
+  padding:10px 0 24px;
+  scrollbar-width:thin;scrollbar-color:var(--stroke) transparent;
+  transform:translateX(-100%);
+  transition:transform .22s ease;
+  box-shadow:none;
+}
+.sidebar.open{transform:translateX(0);box-shadow:var(--sh-lg);}
+.sidebar::-webkit-scrollbar{width:4px} .sidebar::-webkit-scrollbar-thumb{background:var(--stroke);border-radius:4px}
+.main{margin-left:0;flex:1;min-width:0;padding:24px;display:flex;flex-direction:column;gap:16px}
+/* ── HOME PAGE ── */
+.home-wrap{
+  max-width:1060px;margin:0 auto;
+  display:flex;flex-direction:column;
+  gap:56px;padding:16px 0 72px;
+}
+
+/* Hero — two column on desktop */
+.home-hero{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:48px;
+  align-items:center;
+  min-height:340px;
+}
+.home-hero-left{display:flex;flex-direction:column;gap:22px;}
+.home-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--green);
+}
+.home-eyebrow::before{content:'';display:inline-block;width:18px;height:1px;background:var(--green);opacity:.6;}
+.home-title{
+  font-family:var(--serif);
+  font-size:clamp(38px,4.5vw,60px);
+  line-height:1.05;
+  letter-spacing:-.025em;
+  color:var(--ink);
+}
+.home-title em{font-style:italic;color:var(--green);}
+.home-subtitle{
+  font-size:16px;font-weight:400;
+  color:var(--ink2);line-height:1.7;
+  max-width:44ch;
+}
+.home-cta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:4px;}
+.home-cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--sans);font-size:13px;font-weight:600;
+  background:var(--ink);color:#fff;
+  border:1.5px solid var(--ink);
+  border-radius:99px;padding:11px 22px;
+  cursor:pointer;
+  transition:background .16s,transform .14s,box-shadow .16s;
+  text-decoration:none;letter-spacing:.01em;
+  box-shadow:0 1px 3px rgba(0,0,0,.12);
+}
+.home-cta-btn:hover{background:#2a2926;box-shadow:0 4px 14px rgba(0,0,0,.16);transform:translateY(-1px);}
+.home-cta-btn:active{transform:translateY(0);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.home-cta-btn.secondary{
+  background:transparent;color:var(--ink);
+  border-color:var(--stroke2);box-shadow:none;
+}
+.home-cta-btn.secondary:hover{background:var(--base);border-color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+
+/* Hero right — live sensor preview card */
+.home-preview{
+  background:var(--base);
+  border:1px solid var(--stroke);
+  border-radius:20px;
+  padding:24px;
+  box-shadow:0 4px 24px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04);
+  display:flex;flex-direction:column;gap:16px;
+  position:relative;overflow:hidden;
+}
+.home-preview::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:180px;height:180px;
+  background:radial-gradient(circle,rgba(26,122,74,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hp-header{display:flex;align-items:center;justify-content:space-between;}
+.hp-label{font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.14em;}
+.hp-live{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--green);}
+.hp-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
+.hp-score-row{display:flex;align-items:flex-end;gap:10px;}
+.hp-score-num{font-family:var(--serif);font-size:52px;line-height:1;color:var(--ink);letter-spacing:-.03em;}
+.hp-score-side{display:flex;flex-direction:column;gap:4px;padding-bottom:4px;}
+.hp-score-label{font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+.hp-verdict{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-family:var(--mono);font-size:9px;font-weight:600;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.hp-readings{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.hp-reading{background:var(--raised);border:1px solid var(--stroke);border-radius:10px;padding:10px 12px;}
+.hp-r-label{font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
+.hp-r-val{font-family:var(--serif);font-size:20px;line-height:1;color:var(--ink);}
+.hp-r-unit{font-family:var(--mono);font-size:9px;color:var(--ink3);margin-top:1px;}
+.hp-advice{
+  background:var(--green-bg);border:1px solid var(--green-bd);
+  border-radius:10px;padding:10px 12px;
+  font-size:12px;color:#14532d;line-height:1.55;
+}
+.hp-advice strong{font-weight:600;}
+.hp-object{display:flex;align-items:center;gap:8px;padding-top:2px;border-top:1px solid var(--stroke);margin-top:2px;}
+.hp-obj-icon{font-size:15px;}
+.hp-obj-label{font-size:12px;color:var(--ink2);font-weight:500;}
+.hp-obj-sub{font-family:var(--mono);font-size:10px;color:var(--ink3);}
+
+/* Step cards */
+.home-how{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.home-step{
+  background:var(--base);
+  border:1px solid var(--stroke);
+  border-radius:16px;
+  padding:24px 22px;
+  display:flex;flex-direction:column;gap:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+  transition:box-shadow .2s,transform .2s,border-color .2s;
+  cursor:default;
+}
+.home-step:hover{box-shadow:0 6px 20px rgba(0,0,0,.09);transform:translateY(-2px);border-color:var(--stroke2);}
+.home-step-num{
+  font-family:var(--serif);font-size:36px;line-height:1;
+  color:var(--green);opacity:.35;letter-spacing:-.03em;
+}
+.home-step-title{font-family:var(--serif);font-size:20px;color:var(--ink);line-height:1.2;letter-spacing:-.01em;}
+.home-step-desc{font-size:13px;color:var(--ink3);line-height:1.65;}
+
+/* Find Best Spot callout */
+.home-callout{
+  display:flex;align-items:flex-start;gap:18px;
+  background:var(--base);
+  border:1px solid var(--stroke);
+  border-radius:16px;
+  padding:24px 28px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.home-callout-icon{
+  width:44px;height:44px;flex-shrink:0;
+  background:var(--green-bg);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-top:2px;
+  border:1px solid var(--green-bd);
+}
+.home-callout-body{flex:1;}
+.home-callout-title{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:6px;letter-spacing:-.01em;}
+.home-callout-desc{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:12px;max-width:56ch;}
+.home-link{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--sans);font-size:13px;font-weight:600;
+  color:var(--green);text-decoration:none;
+  background:none;border:none;cursor:pointer;padding:0;
+  transition:gap .15s,opacity .15s;
+}
+.home-link:hover{opacity:.75;gap:8px;}
+
+/* Notice */
+.home-notice{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:14px 18px;
+  background:var(--raised);
+  border:1px solid var(--stroke);
+  border-radius:12px;
+  font-size:12px;color:var(--ink3);line-height:1.6;
+}
+
+/* Responsive */
+@media(max-width:860px){
+  .home-hero{grid-template-columns:1fr;gap:32px;min-height:auto;}
+  .home-preview{max-width:440px;}
+}
+@media(max-width:640px){
+  .home-wrap{gap:40px;padding:24px 0 48px;}
+  .home-how{grid-template-columns:1fr;}
+  .home-callout{flex-direction:column;gap:14px;}
+  .home-preview{max-width:100%;}
+  .hp-readings{grid-template-columns:1fr 1fr 1fr;}
+}
+/* reading controls row inside the sensor card */
+.reading-controls{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--stroke)}
+.rc-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rc-label{font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;flex-shrink:0}
+.rc-chips{display:flex;gap:4px;flex-wrap:wrap}
+.rc-chip{font-family:var(--mono);font-size:10px;padding:4px 10px;border:1px solid var(--stroke);border-radius:99px;background:var(--raised);color:var(--ink3);cursor:pointer;transition:all .12s;white-space:nowrap;line-height:1}
+.rc-chip:hover{border-color:var(--stroke2);color:var(--ink2)}
+.rc-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rc-chip.active-green{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.sb-section{margin-bottom:1px}
+.sb-cat{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 6px 14px;cursor:pointer;user-select:none;transition:background .1s}
+.sb-cat:hover{background:var(--inset)}
+.sb-cat-left{display:flex;align-items:center;gap:7px}
+.sb-cat-icon{font-size:13px;line-height:1;width:18px;text-align:center;flex-shrink:0}
+.sb-cat-label{font-size:var(--t-sm);font-weight:600;color:var(--ink2);letter-spacing:.01em}
+.sb-chevron{font-size:9px;color:var(--ink3);transition:transform .2s;flex-shrink:0}
+.sb-chevron.open{transform:rotate(90deg)}
+.sb-items{overflow:hidden;max-height:0;transition:max-height .22s ease}
+.sb-items.open{max-height:800px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 38px;cursor:pointer;border-left:2px solid transparent;transition:background .1s}
+.sb-item:hover{background:var(--inset)}
+.sb-item.active{background:var(--green-bg);border-left-color:var(--green)}
+.sb-item-icon{font-size:12px;width:16px;text-align:center;flex-shrink:0}
+.sb-item-label{font-size:var(--t-sm);color:var(--ink2);line-height:1.3}
+.sb-item.active .sb-item-label{color:var(--green);font-weight:500}
+.sb-divider{height:1px;background:var(--stroke);margin:8px 14px}
+.sb-special{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .1s}
+.sb-special:hover{background:var(--inset)}
+.sb-special.active{background:var(--blue-bg);border-left-color:var(--blue)}
+.sb-special-icon{font-size:13px;width:18px;text-align:center}
+.sb-special-label{font-size:var(--t-sm);font-weight:600;color:var(--ink2)}
+.sb-special.active .sb-special-label{color:var(--blue)}
+.page{display:none} .page.active{display:block}
+.card{background:var(--base);border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--sh-sm);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:11px 15px 10px;border-bottom:1px solid var(--stroke);gap:8px}
+.card-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3)}
+.card-body{padding:15px} .card-body-sm{padding:10px 15px}
+.analyze-layout{display:flex;flex-direction:column;gap:14px}
+.zone-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.zone-mid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.zone-bot{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.obj-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.obj-header-left{display:flex;align-items:flex-start;gap:11px}
+.obj-big-icon{font-size:30px;line-height:1;flex-shrink:0;margin-top:2px}
+.obj-title{font-family:var(--serif);font-size:var(--t-2xl);line-height:1.1;color:var(--ink);margin-bottom:3px}
+.obj-desc{font-size:var(--t-sm);color:var(--ink3);line-height:1.5;max-width:52ch}
+.context-strip{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.ctx-chip{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--ink3);background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-xs);padding:3px 8px;cursor:pointer;transition:border-color .1s,color .1s}
+.ctx-chip:hover{border-color:var(--stroke2);color:var(--ink2)}
+.ctx-chip.set{border-color:var(--green-bd);color:var(--green);background:var(--green-bg)}
+.score-block{display:flex;align-items:center;gap:18px;padding:18px}
+.score-ring{position:relative;width:100px;height:100px;flex-shrink:0}
+.score-ring svg{transform:rotate(-90deg)}
+.ring-track{fill:none;stroke:var(--inset);stroke-width:8}
+.ring-fill{fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:289;stroke-dashoffset:289;transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1),stroke .4s}
+.score-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-num{font-family:var(--serif);font-size:var(--t-3xl);line-height:1;color:var(--ink3);transition:color .4s}
+.score-denom{font-family:var(--mono);font-size:9px;color:var(--ink4)}
+.score-copy{flex:1}
+.score-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;letter-spacing:.04em;margin-bottom:5px}
+.score-badge.optimal{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.score-badge.acceptable{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.score-badge.not-rec{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.score-badge.waiting{background:var(--inset);color:var(--ink3);border:1px solid var(--stroke)}
+.score-verdict{font-family:var(--serif);font-size:var(--t-lg);color:var(--ink3);margin-bottom:4px;transition:color .4s;line-height:1.2}
+.score-reason{font-size:var(--t-sm);color:var(--ink2);line-height:1.6;max-width:36ch}
+.partials{display:flex;gap:7px;margin-top:11px}
+.partial-item{flex:1;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.partial-label{font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em}
+.partial-score-val{font-family:var(--serif);font-size:var(--t-lg);color:var(--ink2)}
+.partial-bar{height:2px;background:var(--stroke);border-radius:1px;overflow:hidden}
+.partial-fill{height:100%;border-radius:1px;transition:width .6s,background .3s}
+.risk-grid{display:flex;flex-direction:column;gap:5px}
+.risk-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm)}
+.risk-label{font-size:var(--t-sm);color:var(--ink2)}
+.risk-badge{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px}
+.risk-badge.low{background:var(--green-bg);color:var(--green)}
+.risk-badge.medium{background:var(--amber-bg);color:var(--amber)}
+.risk-badge.high{background:var(--red-bg);color:var(--red)}
+.risk-badge.unknown{background:var(--inset);color:var(--ink3)}
+.readings-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.rtile{background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);padding:10px 12px;position:relative;overflow:hidden;transition:border-color .3s}
+.rtile::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--stroke);opacity:0;transition:background .3s,opacity .3s}
+.rtile.opt{border-color:var(--green-bd)} .rtile.opt::after{background:var(--green);opacity:1}
+.rtile.acc{border-color:var(--amber-bd)} .rtile.acc::after{background:var(--amber);opacity:1}
+.rtile.bad{border-color:var(--red-bd)} .rtile.bad::after{background:var(--red);opacity:1}
+.rtile-name{font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
+.rtile-val{font-family:var(--serif);font-size:var(--t-2xl);line-height:1;color:var(--ink);transition:color .25s}
+.rtile.opt .rtile-val{color:var(--green)} .rtile.acc .rtile-val{color:var(--amber)} .rtile.bad .rtile-val{color:var(--red)}
+.rtile-unit{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-left:2px}
+.rtile-plain{font-size:10px;color:var(--ink3);margin-top:2px}
+.advice-list{display:flex;flex-direction:column;gap:6px}
+.adv{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:var(--r-sm);font-size:var(--t-sm);line-height:1.55;border:1px solid transparent;animation:advin .22s ease}
+@keyframes advin{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.adv.good{background:var(--green-bg);border-color:var(--green-bd);color:#14532d}
+.adv.warn{background:var(--amber-bg);border-color:var(--amber-bd);color:#78350f}
+.adv.bad{background:var(--red-bg);border-color:var(--red-bd);color:#881337}
+.adv-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.adv-note{margin-top:7px;padding:8px 11px;background:var(--inset);border:1px solid var(--stroke);border-radius:var(--r-sm);font-size:10px;color:var(--ink3);font-family:var(--mono);line-height:1.6}
+.stability-row{display:flex;align-items:center;gap:11px;padding:8px 0}
+.stab-score{font-family:var(--serif);font-size:var(--t-2xl);color:var(--ink)}
+.stab-bar{flex:1;height:4px;background:var(--stroke);border-radius:2px;overflow:hidden}
+.stab-fill{height:100%;border-radius:2px;transition:width .6s,background .3s}
+.stab-note{font-size:var(--t-sm);color:var(--ink3);margin-top:3px;line-height:1.5}
+.spark-row{margin-bottom:11px} .spark-row:last-child{margin-bottom:0}
+.spark-lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--ink3);margin-bottom:3px}
+.spark-cur{color:var(--ink2);font-weight:500}
+canvas.spark{display:block;width:100%;height:32px}
+.time-warn{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:var(--r-sm);font-size:var(--t-sm);color:#78350f;line-height:1.55}
+.storage-tip{display:flex;align-items:flex-start;gap:8px;font-size:var(--t-sm);color:var(--ink2);line-height:1.55;padding:6px 0;border-bottom:1px solid var(--stroke)}
+.storage-tip:last-child{border-bottom:none;padding-bottom:0}
+.storage-tip-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.scanner-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:7px}
+.scan-tile{padding:9px 11px;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);display:flex;flex-direction:column;gap:3px}
+.scan-tile.good-fit{border-color:var(--green-bd);background:var(--green-bg)}
+.scan-tile.poor-fit{border-color:var(--red-bd);background:var(--red-bg);opacity:.75}
+.scan-tile-header{display:flex;align-items:center;gap:6px}
+.scan-icon{font-size:13px} .scan-label{font-size:var(--t-sm);font-weight:500;color:var(--ink2)}
+.scan-tile.good-fit .scan-label{color:var(--green)} .scan-tile.poor-fit .scan-label{color:var(--red)}
+.scan-score{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.scan-tile.good-fit .scan-score{color:var(--green)}
+.scan-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:11px 0 5px}
+.scanner-summary{padding:11px 13px;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);font-size:var(--t-sm);color:var(--ink2);line-height:1.6}
+.ctx-modal-ov{display:none;position:fixed;inset:0;background:rgba(20,20,18,.45);backdrop-filter:blur(3px);z-index:80;align-items:center;justify-content:center;padding:16px}
+.ctx-modal-ov.open{display:flex}
+.ctx-modal{background:var(--base);border:1px solid var(--stroke);border-radius:var(--r-lg);width:100%;max-width:360px;box-shadow:var(--sh-lg);animation:modal-in .18s ease;overflow:hidden}
+@keyframes modal-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ctx-modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--stroke)}
+.ctx-modal-title{font-family:var(--serif);font-size:var(--t-lg)}
+.ctx-modal-close{width:26px;height:26px;border-radius:var(--r-xs);border:1px solid var(--stroke);background:var(--raised);color:var(--ink3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.ctx-modal-close:hover{background:var(--inset)}
+.ctx-modal-body{padding:14px;display:flex;flex-direction:column;gap:7px}
+.ctx-option{display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--stroke);border-radius:var(--r-sm);cursor:pointer;transition:background .1s,border-color .1s}
+.ctx-option:hover{background:var(--inset)} .ctx-option.selected{background:var(--green-bg);border-color:var(--green-bd)}
+.ctx-option-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.ctx-option-text{font-size:var(--t-sm);color:var(--ink2)}
+.ctx-option.selected .ctx-option-text{color:var(--green);font-weight:500}
+.ctx-modal-foot{padding:11px 14px;border-top:1px solid var(--stroke);display:flex;justify-content:flex-end}
+.sensor-mode-tabs{display:flex;background:var(--inset);border-radius:var(--r-sm);padding:3px;gap:2px;margin-bottom:13px}
+.smt{flex:1;font-size:var(--t-sm);font-weight:500;padding:6px;border-radius:5px;border:none;background:transparent;color:var(--ink3);cursor:pointer;transition:background .12s,color .12s;text-align:center}
+.smt.active{background:var(--base);color:var(--ink);box-shadow:var(--sh-sm)}
+.manual-fields{display:flex;flex-direction:column;gap:7px}
+.sf-row{display:flex;flex-direction:column;gap:3px}
+.sf-label{font-size:10px;font-weight:500;color:var(--ink2)}
+.sf-input{height:36px;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);color:var(--ink);font-family:var(--mono);font-size:var(--t-sm);padding:0 10px;outline:none;width:100%;transition:border-color .12s,box-shadow .12s}
+.sf-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-lt)}
+.sf-input::placeholder{color:var(--ink4)}
+.analyze-btn{width:100%;height:40px;background:var(--ink);color:#fff;font-family:var(--sans);font-size:var(--t-md);font-weight:500;border:none;border-radius:var(--r-sm);cursor:pointer;transition:background .12s,transform .1s;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:9px}
+.analyze-btn:hover{background:#2d2c2a} .analyze-btn:active{transform:scale(.99)}
+.analyze-btn.live-mode{background:var(--green)} .analyze-btn.live-mode:hover{background:#14623b}
+.save-area{display:flex;flex-direction:column;gap:7px}
+.save-row{display:flex;gap:7px}
+.text-input{flex:1;height:36px;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);color:var(--ink);font-family:var(--sans);font-size:var(--t-sm);padding:0 10px;outline:none;transition:border-color .12s,box-shadow .12s}
+.text-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-lt)}
+.text-input::placeholder{color:var(--ink4)}
+.note-input{width:100%;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);color:var(--ink);font-family:var(--sans);font-size:var(--t-sm);padding:7px 10px;outline:none;resize:none;height:50px;transition:border-color .12s,box-shadow .12s}
+.note-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-lt)}
+.note-input::placeholder{color:var(--ink4)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-family:var(--sans);font-size:var(--t-sm);font-weight:500;padding:0 13px;height:32px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:all .12s;white-space:nowrap}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)} .btn-primary:hover{background:#2d2c2a}
+.btn-secondary{background:var(--raised);color:var(--ink2);border-color:var(--stroke)} .btn-secondary:hover{background:var(--inset)}
+.btn-ghost{background:transparent;color:var(--ink3)} .btn-ghost:hover{background:var(--inset);color:var(--ink2)}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:var(--red-bd)} .btn-danger:hover{background:#ffe0e3}
+.btn-sm{height:28px;font-size:10px;padding:0 10px}
+.log-toolbar{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-bottom:13px}
+.log-count{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--stroke)}
+table{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+th{padding:8px 11px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);background:var(--raised);border-bottom:1px solid var(--stroke);white-space:nowrap}
+td{padding:8px 11px;border-bottom:1px solid var(--stroke);color:var(--ink2);white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:none} tbody tr:hover td{background:var(--raised)}
+.verdict-badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:99px;font-size:9px;font-weight:600;letter-spacing:.05em}
+.verdict-badge.optimal{background:var(--green-bg);color:var(--green)}
+.verdict-badge.acceptable{background:var(--amber-bg);color:var(--amber)}
+.verdict-badge.not-rec{background:var(--red-bg);color:var(--red)}
+.score-cell{font-family:var(--serif);font-size:var(--t-lg);color:var(--ink)}
+.empty-row td{text-align:center;padding:42px;color:var(--ink3);font-size:var(--t-sm)}
+.compare-section{margin-top:18px}
+.compare-header{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:9px}
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:7px}
+.cmp-card{background:var(--base);border:1px solid var(--stroke);border-radius:var(--r-sm);padding:11px;display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:box-shadow .15s}
+.cmp-card:hover{box-shadow:var(--sh)} .cmp-card.best{border-color:var(--green-bd);background:var(--green-bg)}
+.cmp-name{font-size:var(--t-sm);font-weight:500;color:var(--ink)} .cmp-obj{font-size:10px;color:var(--ink3)}
+.cmp-score{font-family:var(--serif);font-size:var(--t-xl);margin-top:2px}
+.cmp-verdict{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.cmp-best-tag{font-size:9px;color:var(--green);font-weight:600;margin-top:2px}
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:13px}
+.sg{background:var(--base);border:1px solid var(--stroke);border-radius:var(--r);padding:16px}
+.sg-title{font-size:var(--t-sm);font-weight:600;color:var(--ink);margin-bottom:9px}
+.sg-note{font-size:var(--t-sm);color:var(--ink3);line-height:1.6;margin-bottom:11px}
+.sg-row{display:flex;flex-direction:column;gap:3px;margin-bottom:9px}
+.sg-lbl{font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em}
+.sg-inp-row{display:flex;gap:6px;align-items:center}
+.sg-inp{background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);color:var(--ink);font-family:var(--mono);font-size:var(--t-sm);padding:6px 8px;outline:none;width:78px;transition:border-color .12s}
+.sg-inp.wide{width:100%} .sg-inp:focus{border-color:var(--green)}
+.sg-sep{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.sg-hint{font-family:var(--mono);font-size:9px;color:var(--ink3);line-height:1.6;margin-top:3px}
+.sg-select{width:100%;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);color:var(--ink);font-family:var(--mono);font-size:var(--t-sm);padding:7px 10px;outline:none;cursor:pointer;transition:border-color .12s;appearance:none;-webkit-appearance:none;}
+.sg-select:focus{border-color:var(--green)}
+.tz-current{font-family:var(--mono);font-size:10px;color:var(--green);margin-top:5px;}
+.weight-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.weight-label{font-size:var(--t-sm);color:var(--ink2);width:88px;flex-shrink:0}
+.weight-slider{flex:1} .weight-val{font-family:var(--mono);font-size:10px;color:var(--ink2);width:30px;text-align:right}
+.sg-code{font-family:var(--mono);font-size:10px;background:var(--inset);border:1px solid var(--stroke);border-radius:var(--r-sm);padding:8px 10px;color:var(--ink2);line-height:1.7}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(20,20,18,.45);backdrop-filter:blur(3px);z-index:90;align-items:center;justify-content:center;padding:16px}
+.modal-ov.open{display:flex}
+.modal{background:var(--base);border:1px solid var(--stroke);border-radius:var(--r-lg);width:100%;max-width:420px;box-shadow:var(--sh-lg);animation:modal-in .18s ease;overflow:hidden}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--stroke)}
+.modal-title{font-family:var(--serif);font-size:var(--t-lg)}
+.modal-close{width:28px;height:28px;border-radius:var(--r-xs);border:1px solid var(--stroke);background:var(--raised);color:var(--ink3);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.modal-close:hover{background:var(--inset)}
+.modal-body{padding:16px;display:flex;flex-direction:column;gap:9px}
+.modal-foot{padding:11px 16px;border-top:1px solid var(--stroke);display:flex;justify-content:flex-end;gap:7px}
+.about-wrap{max-width:620px;display:flex;flex-direction:column;gap:14px}
+.about-section-title{font-family:var(--serif);font-size:var(--t-xl);color:var(--ink);margin-bottom:5px}
+.about-p{font-size:var(--t-md);color:var(--ink2);line-height:1.7}
+.about-feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.about-feat{background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);padding:11px}
+.about-feat-title{font-size:var(--t-sm);font-weight:600;color:var(--ink);margin-bottom:3px}
+.about-feat-desc{font-size:var(--t-sm);color:var(--ink3);line-height:1.55}
+@media(max-width:820px){.zone-top,.zone-mid,.zone-bot{grid-template-columns:1fr}.home-how{grid-template-columns:1fr}.home-features{grid-template-columns:1fr}.topnav{display:none}}
+@media(max-width:480px){.readings-grid{grid-template-columns:1fr 1fr}.partials{flex-direction:column}.compare-grid{grid-template-columns:1fr 1fr}}
+.flex-row{display:flex;align-items:center;gap:8px}.hidden{display:none!important}.mt-sm{margin-top:7px}.text-mono{font-family:var(--mono)}.text-dim{color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="topbar-wrap">
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" id="hamburger" onclick="App.toggleSidebar()"><span></span><span></span><span></span></button>
+    <a class="logo" href="#" onclick="App.switchPage('home',null)"><span class="logo-name">Smart<em>Place</em></span></a>
+    <div class="topbar-divider"></div>
+    <nav class="topnav">
+      <button class="topnav-btn active" id="tnav-home" onclick="App.switchPage('home',this)">Home</button>
+      <button class="topnav-btn" id="tnav-checker" onclick="App.switchPage('checker',this)">Spot Checker</button>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <span class="mode-pill sim" id="mode-pill">Simulated</span>
+    <button class="conn-pill" id="conn-pill" onclick="UI.openConnModal()"><span class="cdot sim" id="cdot"></span><span id="conn-label">No device</span></button>
+    <div class="pages-wrap" id="pages-wrap">
+      <button class="pages-btn" id="pages-btn" onclick="App.togglePagesMenu()">
+        Menu <span class="pages-chevron" id="pages-chevron">▾</span>
+      </button>
+      <div class="pages-menu" id="pages-menu">
+        <button class="pages-menu-item" id="pmenu-home" onclick="App.switchPage('home')">
+          <span class="pages-menu-icon">🏠</span>Home
+        </button>
+        <button class="pages-menu-item" id="pmenu-checker" onclick="App.switchPage('checker')">
+          <span class="pages-menu-icon">🔍</span>Spot Checker
+        </button>
+        <button class="pages-menu-item" id="pmenu-log" onclick="App.switchPage('log')">
+          <span class="pages-menu-icon">📋</span>Saved Spots
+        </button>
+        <div class="pages-menu-divider"></div>
+        <button class="pages-menu-item" id="pmenu-settings" onclick="App.switchPage('settings')">
+          <span class="pages-menu-icon">⚙️</span>Settings
+        </button>
+        <button class="pages-menu-item" id="pmenu-about" onclick="App.switchPage('about')">
+          <span class="pages-menu-icon">ℹ️</span>About
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+</div>
+<div class="app-shell" id="app-shell">
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="App.toggleSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-special" id="sb-home" onclick="App.switchPage('home')"><span class="sb-special-icon">🏠</span><span class="sb-special-label">Home</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-special" id="sb-bestspot" onclick="App.selectBestSpot()"><span class="sb-special-icon">🔍</span><span class="sb-special-label">Find Best Spot</span></div>
+  <div class="sb-divider"></div>
+  <div id="sb-categories"></div>
+</aside>
+<main class="main" id="main-area">
+
+  <!-- ── PAGE: HOME ── -->
+  <div class="page active" id="page-home">
+    <div class="home-wrap">
+
+      <!-- Hero: two columns -->
+      <div class="home-hero">
+        <div class="home-hero-left">
+          <div class="home-eyebrow">Sensor-powered placement tool</div>
+          <h1 class="home-title">Know before<br>you <em>place</em> it.</h1>
+          <p class="home-subtitle">Put the sensor in a spot, pick what you want to store or grow there, and get a live suitability score with specific advice. Works in simulator mode now. Connect an ESP32 later.</p>
+          <div class="home-cta-row">
+            <button class="home-cta-btn" onclick="App.selectBestSpot()">🔍 &nbsp;Find Best Spot</button>
+            <button class="home-cta-btn secondary" onclick="App.switchPage('log')">📋 &nbsp;Saved Spots</button>
+          </div>
+        </div>
+
+        <!-- Live sensor preview card — fed by the simulator -->
+        <div class="home-preview">
+          <div class="hp-header">
+            <span class="hp-label">Live reading</span>
+            <span class="hp-live"><span class="hp-dot"></span>Simulated</span>
+          </div>
+          <div class="hp-score-row">
+            <div class="hp-score-num" id="hp-score">72</div>
+            <div class="hp-score-side">
+              <div class="hp-score-label">Suitability</div>
+              <div class="hp-verdict" id="hp-verdict">Acceptable</div>
+            </div>
+          </div>
+          <div class="hp-readings">
+            <div class="hp-reading">
+              <div class="hp-r-label">Light</div>
+              <div class="hp-r-val" id="hp-lux">—</div>
+              <div class="hp-r-unit">lux</div>
+            </div>
+            <div class="hp-reading">
+              <div class="hp-r-label">Temp</div>
+              <div class="hp-r-val" id="hp-temp">—</div>
+              <div class="hp-r-unit">°F</div>
+            </div>
+            <div class="hp-reading">
+              <div class="hp-r-label">Humidity</div>
+              <div class="hp-r-val" id="hp-hum">—</div>
+              <div class="hp-r-unit">%</div>
+            </div>
+          </div>
+          <div class="hp-advice" id="hp-advice">
+            <strong>Light is in the ideal range.</strong> Temperature is comfortable. Humidity is slightly elevated — watch for moisture-sensitive items.
+          </div>
+          <div class="hp-object">
+            <span class="hp-obj-icon">🌱</span>
+            <span class="hp-obj-label">Standard Foliage Plant</span>
+            <span class="hp-obj-sub" style="margin-left:auto">Score updates live</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="home-how">
+        <div class="home-step">
+          <div class="home-step-num">01</div>
+          <div class="home-step-title">Place the sensor</div>
+          <div class="home-step-desc">Set it in the exact spot — shelf, windowsill, drawer, corner. It reads only that location.</div>
+        </div>
+        <div class="home-step">
+          <div class="home-step-num">02</div>
+          <div class="home-step-title">Select your object</div>
+          <div class="home-step-desc">22 profiles: plants, cologne, candles, electronics, books, medicine, instruments, sleep, and more.</div>
+        </div>
+        <div class="home-step">
+          <div class="home-step-num">03</div>
+          <div class="home-step-title">Read the score</div>
+          <div class="home-step-desc">0–100 score, named risk labels, specific advice, and a stability reading across 60 samples.</div>
+        </div>
+      </div>
+
+      <!-- Find Best Spot callout -->
+      <div class="home-callout">
+        <div class="home-callout-icon">🔍</div>
+        <div class="home-callout-body">
+          <div class="home-callout-title">Find Best Spot</div>
+          <p class="home-callout-desc">Not sure what to put where? SmartPlace scores the current location against every object profile at once and tells you exactly what it's naturally suited for — and what to keep away.</p>
+          <button class="home-link" onclick="App.selectBestSpot()">Open Find Best Spot &nbsp;→</button>
+        </div>
+      </div>
+
+      <!-- Sensor notice -->
+      <div class="home-notice">
+        <span style="font-size:13px;flex-shrink:0;margin-top:1px">📍</span>
+        <span>The sensor reads only the spot where it's placed. Move it to test a different location — it does not scan the room.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="page" id="page-checker" style="display:none">
+    <div id="view-bestspot">
+      <div class="card">
+        <div class="card-head"><span class="card-title">Find Best Spot — What is this location good for?</span><span class="text-mono text-dim" style="font-size:9px" id="bs-ts">—</span></div>
+        <div class="card-body">
+          <div class="scanner-summary" id="bs-summary">The sensor is reading this spot. Scores update as data comes in.</div>
+          <div class="scan-section-label">Recommended for this spot</div>
+          <div class="scanner-grid" id="bs-good"></div>
+          <div class="scan-section-label">Not recommended</div>
+          <div class="scanner-grid" id="bs-poor"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head"><span class="card-title">Current Readings</span></div>
+        <div class="card-body"><div class="readings-grid" id="bs-readings"></div></div>
+      </div>
+    </div>
+    <div id="view-object" class="hidden analyze-layout">
+      <div class="zone-top">
+        <div class="card"><div class="card-body"><div class="obj-header" id="obj-header"></div><div class="context-strip" id="context-strip"></div></div></div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Suitability Score</span><span class="text-mono text-dim" style="font-size:9px" id="score-ts">—</span></div>
+          <div class="score-block">
+            <div class="score-ring"><svg viewBox="0 0 100 100" width="100" height="100"><circle class="ring-track" cx="50" cy="50" r="46"/><circle class="ring-fill" id="ring-fill" cx="50" cy="50" r="46" stroke="var(--stroke2)"/></svg><div class="score-inner"><span class="score-num" id="score-num">—</span><span class="score-denom">/ 100</span></div></div>
+            <div class="score-copy"><div class="score-badge waiting" id="score-badge">Waiting</div><div class="score-verdict" id="score-verdict">Place the sensor, then analyze.</div><div class="score-reason" id="score-reason"></div></div>
+          </div>
+          <div class="card-body-sm" style="border-top:1px solid var(--stroke)"><div class="partials" id="partials"></div></div>
+        </div>
+      </div>
+      <div class="zone-mid">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Sensor Readings</span><span class="text-mono text-dim" style="font-size:9px" id="hz-lbl">—</span></div>
+          <div class="card-body"><div class="readings-grid" id="readings-grid"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Risk Assessment</span></div>
+          <div class="card-body"><div class="risk-grid" id="risk-grid"><p style="font-size:10px;color:var(--ink3);font-family:var(--mono)">Risks appear after the first analysis.</p></div></div>
+        </div>
+      </div>
+      <div class="zone-bot">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Recommendations</span></div>
+            <div class="card-body"><div class="advice-list" id="advice-list"><div class="adv warn"><span class="adv-icon">💡</span><span>Select an object from the sidebar to see recommendations.</span></div></div></div>
+          </div>
+          <div class="card" id="time-warn-card" style="display:none"><div class="card-body"><div class="time-warn" id="time-warn-content"></div></div></div>
+          <div class="card" id="move-where-card" style="display:none">
+            <div class="card-head"><span class="card-title">Better Location</span></div>
+            <div class="card-body">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <span style="font-size:16px;flex-shrink:0;margin-top:1px">📍</span>
+                <div>
+                  <div style="font-size:var(--t-sm);color:var(--ink2);line-height:1.6" id="move-where-text">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card" id="storage-tips-card" style="display:none">
+            <div class="card-head"><span class="card-title">Storage Tips</span></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:7px" id="storage-tips-list"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Stability</span></div>
+            <div class="card-body"><div class="stability-row"><div class="stab-score" id="stab-score">—</div><div class="stab-bar"><div class="stab-fill" id="stab-fill" style="width:0%;background:var(--stroke)"></div></div></div><div class="stab-note" id="stab-note">Monitoring conditions over time.</div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Trend — 60 readings</span></div>
+            <div class="card-body" id="spark-area"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Reading Settings</span></div>
+            <div class="card-body">
+              <div class="reading-controls">
+                <!-- Temperature unit -->
+                <div class="rc-row">
+                  <span class="rc-label">Temperature</span>
+                  <div class="rc-chips">
+                    <button class="rc-chip active" id="rc-F" onclick="App.setUnit('F')">°F Fahrenheit</button>
+                    <button class="rc-chip" id="rc-C" onclick="App.setUnit('C')">°C Celsius</button>
+                  </div>
+                </div>
+                <!-- Placement location -->
+                <div class="rc-row">
+                  <span class="rc-label">Location</span>
+                  <div class="rc-chips" id="rc-location-chips">
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','windowsill')">Windowsill</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','shelf')">Shelf</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','drawer')">Drawer</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','closet')">Closet</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','desk')">Desk</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','bathroom')">Bathroom</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','garage')">Garage</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','floor')">Floor</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('location','outdoor')">Outdoor</button>
+                  </div>
+                </div>
+                <!-- Sensitivity -->
+                <div class="rc-row">
+                  <span class="rc-label">Sensitivity</span>
+                  <div class="rc-chips">
+                    <button class="rc-chip" id="rc-sens-low" onclick="App.setSensitivity('low')">Durable</button>
+                    <button class="rc-chip active" id="rc-sens-standard" onclick="App.setSensitivity('standard')">Standard</button>
+                    <button class="rc-chip" id="rc-sens-high" onclick="App.setSensitivity('high')">Very Sensitive</button>
+                  </div>
+                </div>
+                <!-- Airflow -->
+                <div class="rc-row">
+                  <span class="rc-label">Airflow</span>
+                  <div class="rc-chips" id="rc-airflow-chips">
+                    <button class="rc-chip" onclick="App.setCtxDirect('airflow','none')">None</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('airflow','some')">Some</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('airflow','strong')">Strong</button>
+                    <button class="rc-chip" onclick="App.setCtxDirect('airflow','unknown')">Unknown</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Sensor source mode -->
+              <div class="sensor-mode-tabs"><button class="smt active" id="smt-sim" onclick="App.setMode('sim')">Simulated</button><button class="smt" id="smt-manual" onclick="App.setMode('manual')">Manual</button><button class="smt" id="smt-live" onclick="App.setMode('live')">Live ESP32</button></div>
+              <div id="panel-sim"><p style="font-size:10px;color:var(--ink3);font-family:var(--mono)">Sensor is running — readings update automatically.</p></div>
+              <div id="panel-manual" class="hidden manual-fields"></div>
+              <div id="panel-live" class="hidden"><p style="font-size:10px;color:var(--ink3);font-family:var(--mono)" id="live-status">Not connected.</p></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Save This Spot</span></div>
+            <div class="card-body"><div class="save-area"><div class="save-row"><input class="text-input" id="spot-name" placeholder="Name this spot…" maxlength="50"/><button class="btn btn-primary" onclick="App.saveSpot()">Save</button></div><textarea class="note-input" id="spot-note" placeholder="Optional note…"></textarea></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page" id="page-log" style="display:none">
+    <div class="log-toolbar"><span class="log-count" id="log-count">0 spots saved</span><div class="flex-row"><button class="btn btn-secondary btn-sm" onclick="App.exportCSV()">Export CSV</button><button class="btn btn-danger btn-sm" onclick="App.clearLog()">Clear All</button></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Name</th><th>Object</th><th>Score</th><th>Verdict</th><th>Light</th><th>Temp</th><th>Humidity</th><th>Local Time</th><th>Timezone</th><th>Source</th><th></th></tr></thead><tbody id="log-body"></tbody></table></div>
+    <div class="compare-section" id="compare-section" style="display:none"><div class="compare-header">Saved Spot Comparison</div><div class="compare-grid" id="compare-grid"></div></div>
+  </div>
+  <div class="page" id="page-settings" style="display:none">
+    <div class="settings-grid">
+      <div class="sg" style="grid-column:1/-1;max-width:620px">
+        <div class="sg-title">Custom Object — Ideal Ranges</div>
+        <p class="sg-note">Define what counts as ideal for your Custom profile. The score drops as readings fall outside these ranges.</p>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div class="sg-row"><label class="sg-lbl">Light (lux)</label><div class="sg-inp-row"><input class="sg-inp" id="c-light-min" type="number" placeholder="min"/><span class="sg-sep">to</span><input class="sg-inp" id="c-light-max" type="number" placeholder="max"/></div></div>
+          <div class="sg-row"><label class="sg-lbl" id="c-temp-lbl">Temp (°F)</label><div class="sg-inp-row"><input class="sg-inp" id="c-temp-min" type="number" placeholder="min"/><span class="sg-sep">to</span><input class="sg-inp" id="c-temp-max" type="number" placeholder="max"/></div></div>
+          <div class="sg-row"><label class="sg-lbl">Humidity (%)</label><div class="sg-inp-row"><input class="sg-inp" id="c-hum-min" type="number" placeholder="min"/><span class="sg-sep">to</span><input class="sg-inp" id="c-hum-max" type="number" placeholder="max"/></div></div>
+          <div style="margin-top:7px"><div class="sg-lbl" style="margin-bottom:7px">Factor Weights</div>
+            <div class="weight-row"><span class="weight-label">Light</span><input class="weight-slider" type="range" id="w-light" min="0" max="100" value="33" oninput="UI.updateWeightDisplay()"/><span class="weight-val" id="wd-light">33%</span></div>
+            <div class="weight-row"><span class="weight-label">Temperature</span><input class="weight-slider" type="range" id="w-temp" min="0" max="100" value="34" oninput="UI.updateWeightDisplay()"/><span class="weight-val" id="wd-temp">34%</span></div>
+            <div class="weight-row"><span class="weight-label">Humidity</span><input class="weight-slider" type="range" id="w-hum" min="0" max="100" value="33" oninput="UI.updateWeightDisplay()"/><span class="weight-val" id="wd-hum">33%</span></div>
+            <p class="sg-hint">Weights normalize automatically.</p></div>
+          <div class="flex-row" style="margin-top:5px"><button class="btn btn-primary btn-sm" onclick="App.saveCustomConfig()">Save Custom Profile</button><button class="btn btn-secondary btn-sm" onclick="App.resetCustomConfig()">Reset</button></div>
+        </div>
+      </div>
+      <div class="sg">
+        <div class="sg-title">Device Connection</div>
+        <p class="sg-note">Enter your ESP32's local network address. The dashboard polls every 2 seconds.</p>
+        <div class="sg-row"><label class="sg-lbl">Endpoint URL</label><input class="sg-inp wide" id="s-device-url" placeholder="http://192.168.x.x/data"/></div>
+        <div class="flex-row"><button class="btn btn-primary btn-sm" onclick="App.connectDevice()">Connect</button><button class="btn btn-secondary btn-sm" onclick="App.enableSim()">Use Simulator</button></div>
+        <div class="sg-code" style="margin-top:9px">{"lux":250,"temperatureF":74.5,"temperatureC":23.6,<br>"humidity":45,"sound":35,"airflow":null}</div>
+      </div>
+      <div class="sg">
+        <div class="sg-title">Timezone</div>
+        <p class="sg-note">Used for timestamps on saved spots and CSV exports. Auto-detected from your browser.</p>
+        <div class="sg-row">
+          <label class="sg-lbl">Timezone</label>
+          <select class="sg-select" id="tz-select" onchange="App.setTimezone(this.value)"></select>
+        </div>
+        <div class="tz-current" id="tz-current"></div>
+      </div>
+      <div class="sg"><div class="sg-title">About</div><p class="sg-note" style="margin-bottom:4px">SmartPlace v4.0</p><p class="sg-note">Supported sensors: BH1750 (light), BME280/DHT22 (temp+humidity). Extra JSON fields are accepted and ignored.</p></div>
+    </div>
+  </div>
+  <div class="page" id="page-about" style="display:none">
+    <div class="about-wrap">
+      <div class="card"><div class="card-body">
+        <div class="about-section-title">SmartPlace</div>
+        <p class="about-p">A spot-checking tool that tells you whether a specific location is right for what you want to place there. Put the sensor in the exact spot, select your object, and get a live score with specific advice.</p>
+        <div class="about-feature-grid" style="margin-top:13px">
+          <div class="about-feat"><div class="about-feat-title">Find Best Spot</div><div class="about-feat-desc">Scan any location and see every object type ranked by suitability instantly.</div></div>
+          <div class="about-feat"><div class="about-feat-title">Risk Labels</div><div class="about-feat-desc">Specific risks like melt risk, moisture risk, and fading risk — not just a single number.</div></div>
+          <div class="about-feat"><div class="about-feat-title">Stability Score</div><div class="about-feat-desc">Tracks how much conditions fluctuate over the last 60 readings.</div></div>
+          <div class="about-feat"><div class="about-feat-title">Context Inputs</div><div class="about-feat-desc">Add airflow and location type to improve advice without extra sensors.</div></div>
+          <div class="about-feat"><div class="about-feat-title">Saved Spot Comparison</div><div class="about-feat-desc">Save multiple spots and find the best one for any object type.</div></div>
+          <div class="about-feat"><div class="about-feat-title">14 Object Profiles</div><div class="about-feat-desc">Plants, storage, utility, and custom — each with its own scoring logic and risk labels.</div></div>
+        </div>
+        <p class="about-p" style="margin-top:13px;font-size:var(--t-sm);color:var(--ink3)">The sensor evaluates only the spot where it is placed. It does not scan the room.</p>
+      </div></div>
+    </div>
+  </div>
+</main>
+</div>
+<div class="ctx-modal-ov" id="ctx-modal-airflow"><div class="ctx-modal"><div class="ctx-modal-head"><span class="ctx-modal-title">Airflow at this spot</span><button class="ctx-modal-close" onclick="UI.closeCtxModal('airflow')">×</button></div><div class="ctx-modal-body" id="ctx-body-airflow"></div><div class="ctx-modal-foot"><button class="btn btn-primary btn-sm" onclick="UI.confirmCtxModal('airflow')">Done</button></div></div></div>
+<div class="ctx-modal-ov" id="ctx-modal-location"><div class="ctx-modal"><div class="ctx-modal-head"><span class="ctx-modal-title">Surface / location type</span><button class="ctx-modal-close" onclick="UI.closeCtxModal('location')">×</button></div><div class="ctx-modal-body" id="ctx-body-location"></div><div class="ctx-modal-foot"><button class="btn btn-primary btn-sm" onclick="UI.confirmCtxModal('location')">Done</button></div></div></div>
+<div class="modal-ov" id="conn-modal"><div class="modal"><div class="modal-head"><span class="modal-title">Connect to ESP32</span><button class="modal-close" onclick="UI.closeConnModal()">×</button></div><div class="modal-body"><label style="font-family:var(--mono);font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:4px">Device endpoint URL</label><input class="sf-input" id="m-device-url" placeholder="http://192.168.x.x/data" style="width:100%"/><p style="font-size:10px;color:var(--ink3);font-family:var(--mono);line-height:1.6">Dashboard polls this address every 2 seconds.</p><div class="sg-code">{"lux":250,"temperatureF":74.5,"temperatureC":23.6,"humidity":45}</div></div><div class="modal-foot"><button class="btn btn-secondary btn-sm" onclick="App.enableSim();UI.closeConnModal()">Use Simulator</button><button class="btn btn-primary btn-sm" onclick="App.connectDevice();UI.closeConnModal()">Connect</button></div></div></div>
+<script>
+// ═══════════════════════════════════════════════════════
+//  PROFILES
+// ═══════════════════════════════════════════════════════
+const PROFILES={
+  plant_lowlight:{id:'plant_lowlight',label:'Low-Light Plant',icon:'🌿',group:'Plants',desc:'Snake plants, pothos, ZZ plants.',
+    factors:{light:.55,temp:.25,humidity:.20},
+    ranges:{light:{min:50,max:500},tempF:{min:60,max:80},tempC:{min:15.5,max:26.7},humidity:{min:35,max:65}},
+    risks:{'Leaf burn risk':'sun','Heat stress':'heat','Root rot':'moisture'},
+    timeWarn:'Light near windows shifts throughout the day. A spot that looks fine in the morning may get intense afternoon sun.',
+    moveWhere:'A shadier corner, bookshelf alcove, or 6+ feet from a south-facing window.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<50)m.push({l:'bad',t:`Almost no light (${r.lux} lux). Even shade-tolerant plants need some ambient light.`});else if(r.lux<=500)m.push({l:'good',t:`Light suits a low-light plant well (${r.lux} lux).`});else if(r.lux<=1500)m.push({l:'warn',t:`A bit bright for this plant (${r.lux} lux). A sheer curtain or moving back from the window helps.`});else m.push({l:'bad',t:`Too bright for a low-light plant (${r.lux} lux). Move to a shadier corner.`});}
+      if(t!=null){const lo=u==='F'?60:15.5,hi=u==='F'?80:26.7;if(t<lo)m.push({l:'bad',t:`Too cold (${t}°${u}). Keep away from cold windows and AC vents.`});else if(t<=hi)m.push({l:'good',t:`Temperature is comfortable (${t}°${u}).`});else m.push({l:'warn',t:`A bit warm (${t}°${u}). Avoid heat vents and radiators.`});}
+      if(r.humidity!=null){if(r.humidity<35)m.push({l:'warn',t:`Dry air (${r.humidity}%). Misting or a water tray nearby helps.`});else if(r.humidity<=65)m.push({l:'good',t:`Humidity is fine (${r.humidity}%).`});else m.push({l:'warn',t:`High humidity (${r.humidity}%). Watch for root rot.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??0,h=r.humidity??50;return{sun:lux>1500?'high':lux>500?'medium':'low',heat:h>70?'medium':'low',moisture:h>70?'high':h>55?'medium':'low'};}},
+
+  plant_standard:{id:'plant_standard',label:'Standard Foliage',icon:'🌱',group:'Plants',desc:'Monstera, fiddle leaf fig, peace lily.',
+    factors:{light:.60,temp:.25,humidity:.15},
+    ranges:{light:{min:500,max:2500},tempF:{min:65,max:80},tempC:{min:18.3,max:26.7},humidity:{min:40,max:65}},
+    risks:{'Leaf scorch risk':'sun','Heat stress':'heat','Root rot':'moisture'},
+    timeWarn:'Afternoon sun through west-facing windows can exceed safe light levels. Check this spot again between 2–5 PM.',
+    moveWhere:'Within 3–5 feet of a bright window, shielded from direct afternoon sun.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<200)m.push({l:'bad',t:`Too dark (${r.lux} lux). Move within 3–5 feet of a bright window.`});else if(r.lux<500)m.push({l:'warn',t:`Dim (${r.lux} lux). Plant will survive but grow slowly here.`});else if(r.lux<=2500)m.push({l:'good',t:`Light is in the ideal range (${r.lux} lux).`});else if(r.lux<=5000)m.push({l:'warn',t:`Bright spot (${r.lux} lux). A sheer curtain softens direct afternoon sun.`});else m.push({l:'bad',t:`Intense direct light (${r.lux} lux). Move away from the window.`});}
+      if(t!=null){const lo=u==='F'?65:18.3,hi=u==='F'?80:26.7;if(t<lo)m.push({l:'bad',t:`Too cool (${t}°${u}). Drafts from windows and AC vents damage tropical plants.`});else if(t<=hi)m.push({l:'good',t:`Temperature is great (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Avoid placing next to a heat source.`});}
+      if(r.humidity!=null){if(r.humidity<40)m.push({l:'warn',t:`A bit dry (${r.humidity}%). Misting helps tropical plants.`});else if(r.humidity<=65)m.push({l:'good',t:`Humidity is suitable (${r.humidity}%).`});else m.push({l:'warn',t:`High humidity (${r.humidity}%). Ensure airflow.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??0,h=r.humidity??50;return{sun:lux>5000?'high':lux>2500?'medium':'low',heat:h>70?'medium':'low',moisture:h>70?'high':h>55?'medium':'low'};}},
+
+  plant_highlight:{id:'plant_highlight',label:'High-Light Plant',icon:'☀️',group:'Plants',desc:'Cacti, succulents, citrus.',
+    factors:{light:.65,temp:.20,humidity:.15},
+    ranges:{light:{min:2000,max:15000},tempF:{min:65,max:90},tempC:{min:18.3,max:32.2},humidity:{min:10,max:40}},
+    risks:{'Direct sun need':'sun','Heat stress':'heat','Root rot risk':'moisture'},
+    timeWarn:'These plants need direct sun. Confirm the spot gets bright light during peak daytime hours.',
+    moveWhere:'Right next to a south- or west-facing window with as much direct sun as possible.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<500)m.push({l:'bad',t:`Far too dark (${r.lux} lux). Needs a south- or west-facing window with direct sun.`});else if(r.lux<2000)m.push({l:'warn',t:`Not quite bright enough (${r.lux} lux). Move closer to the sunniest window.`});else if(r.lux<=15000)m.push({l:'good',t:`Excellent light for this plant (${r.lux} lux).`});else m.push({l:'good',t:`Very intense light (${r.lux} lux) — cacti and succulents thrive here.`});}
+      if(t!=null){const lo=u==='F'?60:15.6,hi=u==='F'?90:32.2;if(t<lo)m.push({l:'warn',t:`A bit cool (${t}°${u}). Desert plants prefer warm conditions.`});else if(t<=hi)m.push({l:'good',t:`Temperature is great (${t}°${u}).`});else m.push({l:'warn',t:`Very hot (${t}°${u}). Make sure the pot isn't trapping heat.`});}
+      if(r.humidity!=null){if(r.humidity<=40)m.push({l:'good',t:`Low humidity is ideal for desert plants (${r.humidity}%).`});else if(r.humidity<=60)m.push({l:'warn',t:`Somewhat humid (${r.humidity}%). Ensure soil dries fully between watering.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Root rot risk is high here.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??30;return{sun:'low',heat:'low',moisture:h>60?'high':h>40?'medium':'low'};}},
+
+  plant_herbs:{id:'plant_herbs',label:'Herbs / Seedlings',icon:'🌾',group:'Plants',desc:'Basil, mint, seedlings.',
+    factors:{light:.55,temp:.25,humidity:.20},
+    ranges:{light:{min:1000,max:4000},tempF:{min:65,max:80},tempC:{min:18.3,max:26.7},humidity:{min:45,max:70}},
+    risks:{'Leaf wilt risk':'sun','Bolting risk':'heat','Damping off':'moisture'},
+    timeWarn:'Seedlings are sensitive to temperature swings. This reading only reflects right now.',
+    moveWhere:'A bright windowsill with morning sun shielded from hot afternoon sun.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<500)m.push({l:'bad',t:`Not enough light for herbs (${r.lux} lux). Most need a bright windowsill.`});else if(r.lux<=4000)m.push({l:'good',t:`Good light for herbs and seedlings (${r.lux} lux).`});else m.push({l:'warn',t:`Very bright (${r.lux} lux). Some herbs bolt in direct afternoon sun.`});}
+      if(t!=null){const lo=u==='F'?65:18.3,hi=u==='F'?80:26.7;if(t<lo)m.push({l:'warn',t:`A bit cool for most herbs (${t}°${u}).`});else if(t<=hi)m.push({l:'good',t:`Good temperature for herbs (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Keep herbs hydrated in warm spots.`});}
+      if(r.humidity!=null){if(r.humidity<45)m.push({l:'warn',t:`Dry air (${r.humidity}%). Herbs and seedlings prefer more moisture.`});else if(r.humidity<=70)m.push({l:'good',t:`Humidity is good for herbs (${r.humidity}%).`});else m.push({l:'warn',t:`High humidity (${r.humidity}%). Watch for damping off in seedlings.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??0,h=r.humidity??55;return{sun:lux>4000?'medium':'low',heat:lux>4000?'medium':'low',moisture:h>75?'high':'low'};}},
+
+  cologne:{id:'cologne',label:'Cologne / Perfume',icon:'🧴',group:'Storage',desc:'Fragrance bottles — dark, cool, and dry.',
+    factors:{light:.40,temp:.40,humidity:.20},
+    ranges:{light:{min:0,max:150},tempF:{min:55,max:72},tempC:{min:12.8,max:22.2},humidity:{min:20,max:55}},
+    risks:{'UV / light damage':'uv','Fragrance degradation':'heat','Cap corrosion':'moisture'},
+    timeWarn:'Sunlight angle shifts throughout the day. A drawer or cabinet away from windows is safest regardless of current readings.',
+    moveWhere:'A drawer, closet shelf, or cabinet — anywhere dark, cool, and away from steam.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=150)m.push({l:'good',t:`Dark enough — great for fragrance (${r.lux} lux).`});else if(r.lux<=800)m.push({l:'warn',t:`Some ambient light (${r.lux} lux). Fine if sunlight isn't hitting the bottle directly.`});else m.push({l:'bad',t:`Too bright (${r.lux} lux). UV breaks down fragrance. Use a drawer or cabinet.`});}
+      if(t!=null){const hi=u==='F'?72:22.2,hw=u==='F'?85:29.4;if(t<=hi)m.push({l:'good',t:`Good cool temperature for fragrance (${t}°${u}).`});else if(t<=hw)m.push({l:'warn',t:`Getting warm (${t}°${u}). Avoid heaters and sunny shelves.`});else m.push({l:'bad',t:`Too warm (${t}°${u}). Heat speeds evaporation. Move to a cool, dark spot.`});}
+      if(r.humidity!=null){if(r.humidity<=55)m.push({l:'good',t:`Dry enough for fragrance (${r.humidity}%).`});else if(r.humidity<=70)m.push({l:'warn',t:`Somewhat humid (${r.humidity}%). Bathroom steam degrades scent.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Move out of the bathroom.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??0,t=r.tempF??70,h=r.humidity??45;return{uv:lux>800?'high':lux>150?'medium':'low',heat:t>85?'high':t>72?'medium':'low',moisture:h>70?'high':h>55?'medium':'low'};}},
+
+  candle:{id:'candle',label:'Candle / Wax Item',icon:'🕯️',group:'Storage',desc:'Candles, wax melts — cool, dry, dark.',
+    factors:{light:.30,temp:.50,humidity:.20},
+    ranges:{light:{min:0,max:300},tempF:{min:60,max:75},tempC:{min:15.6,max:23.9},humidity:{min:20,max:50}},
+    note:'This tool evaluates storage conditions only. It does not replace candle fire-safety guidelines.',
+    risks:{'Melt / softening risk':'melt','Sun damage risk':'sun','Wax bloom / haze':'moisture'},
+    timeWarn:'Wax softens when temperature rises. This reading is a snapshot — confirm the spot stays cool throughout the day.',
+    moveWhere:'A cool drawer, interior shelf, or cabinet away from windows and heat sources.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=300)m.push({l:'good',t:`Good low-light conditions for candles (${r.lux} lux).`});else if(r.lux<=1500)m.push({l:'warn',t:`Moderate light (${r.lux} lux). Keep wax away from direct sunlight.`});else m.push({l:'bad',t:`Too bright (${r.lux} lux). Direct sun softens wax and fades color.`});}
+      if(t!=null){const lo=u==='F'?55:12.8,hi=u==='F'?75:23.9,hw=u==='F'?85:29.4;if(t<lo)m.push({l:'warn',t:`Cold here (${t}°${u}). Very low temps can crack some wax types.`});else if(t<=hi)m.push({l:'good',t:`Cool storage temperature — good for wax (${t}°${u}).`});else if(t<=hw)m.push({l:'warn',t:`Getting warm (${t}°${u}). Wax may start to soften.`});else m.push({l:'bad',t:`Too warm — wax will melt (${t}°${u}).`});}
+      if(r.humidity!=null){if(r.humidity<=50)m.push({l:'good',t:`Dry enough for candles (${r.humidity}%).`});else if(r.humidity<=70)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Cover candles for long-term storage.`});else m.push({l:'bad',t:`High humidity (${r.humidity}%). Moisture causes wax bloom. Store somewhere dry.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??0,t=r.tempF??70,h=r.humidity??40;return{melt:t>85?'high':t>75?'medium':'low',sun:lux>1500?'high':lux>300?'medium':'low',moisture:h>70?'high':h>50?'medium':'low'};}},
+
+  electronics:{id:'electronics',label:'Electronics',icon:'💻',group:'Storage',desc:'Phones, laptops, consoles — cool, dry, shaded.',
+    factors:{light:.15,temp:.40,humidity:.45},
+    ranges:{light:{min:0,max:1000},tempF:{min:55,max:80},tempC:{min:12.8,max:26.7},humidity:{min:20,max:55}},
+    risks:{'Overheating risk':'overheating','Moisture / corrosion':'moisture','Dust exposure':'dust'},
+    timeWarn:'Electronics near windows heat up as the sun moves. Check again during peak afternoon hours.',
+    moveWhere:'An interior desk, shelf, or cabinet away from windows, bathrooms, and heating vents.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=1000)m.push({l:'good',t:`No direct sunlight — good for electronics (${r.lux} lux).`});else m.push({l:'warn',t:`Direct light (${r.lux} lux). Sunlight heats devices and damages screens over time.`});}
+      if(t!=null){const hi=u==='F'?80:26.7,hw=u==='F'?95:35;if(t<(u==='F'?50:10))m.push({l:'warn',t:`Cold (${t}°${u}). Let devices warm up before turning on.`});else if(t<=hi)m.push({l:'good',t:`Temperature is safe for electronics (${t}°${u}).`});else if(t<=hw)m.push({l:'warn',t:`Warm here (${t}°${u}). Fine for short use — don't store running devices here long-term.`});else m.push({l:'bad',t:`Too hot for electronics (${t}°${u}). Battery damage risk. Find a cooler spot.`});}
+      if(r.humidity!=null){if(r.humidity<=55)m.push({l:'good',t:`Humidity is safe for electronics (${r.humidity}%).`});else if(r.humidity<=70)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Avoid long-term storage here.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Moisture corrodes components. Avoid bathrooms and damp corners.`});}
+      return m;},
+    riskCalc(r){const t=r.tempF??70,h=r.humidity??45;return{overheating:t>95?'high':t>80?'medium':'low',moisture:h>70?'high':h>55?'medium':'low',dust:'unknown'};}},
+
+  books:{id:'books',label:'Books / Documents',icon:'📚',group:'Storage',desc:'Books, documents, photos — dry, dark, stable.',
+    factors:{light:.35,temp:.20,humidity:.45},
+    ranges:{light:{min:0,max:200},tempF:{min:60,max:75},tempC:{min:15.6,max:23.9},humidity:{min:20,max:50}},
+    risks:{'Mold risk':'mold','Fading / yellowing':'fading','Paper warping':'warping'},
+    timeWarn:'A spot near a window may look dim now but can receive direct sunlight later in the day.',
+    moveWhere:'An interior bookshelf away from windows, exterior walls, and bathrooms.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=200)m.push({l:'good',t:`Good dark conditions for books (${r.lux} lux).`});else if(r.lux<=1000)m.push({l:'warn',t:`Some light (${r.lux} lux). Avoid direct sunlight on spines and covers.`});else m.push({l:'bad',t:`Too bright (${r.lux} lux). Sunlight yellows pages and fades covers.`});}
+      if(t!=null){if(t<(u==='F'?55:12.8))m.push({l:'warn',t:`Cold here (${t}°${u}). Cold damp conditions encourage mold.`});else if(t<=(u==='F'?75:23.9))m.push({l:'good',t:`Good stable temperature for books (${t}°${u}).`});else m.push({l:'warn',t:`Warm (${t}°${u}). Fine as long as humidity is low.`});}
+      if(r.humidity!=null){if(r.humidity<=50)m.push({l:'good',t:`Low humidity — great for paper (${r.humidity}%).`});else if(r.humidity<=65)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Watch valuable books or documents.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Paper warps and molds. Avoid bathrooms and damp walls.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??0,h=r.humidity??45;return{mold:h>65?'high':h>50?'medium':'low',fading:lux>1000?'high':lux>200?'medium':'low',warping:h>65?'high':h>50?'medium':'low'};}},
+
+  medicine:{id:'medicine',label:'Medicine / Vitamins',icon:'💊',group:'Storage',desc:'Medications, supplements — cool, dry, dark.',
+    factors:{light:.30,temp:.45,humidity:.25},
+    ranges:{light:{min:0,max:200},tempF:{min:59,max:77},tempC:{min:15,max:25},humidity:{min:20,max:55}},
+    risks:{'Potency degradation':'degradation','Moisture damage':'moisture','Heat breakdown':'heat'},
+    timeWarn:'Bathrooms fluctuate in temperature and humidity. Store medications in a cool, dry, interior location.',
+    moveWhere:'A cool, dry drawer away from the bathroom — a bedroom or kitchen cabinet works well.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=200)m.push({l:'good',t:`Dark spot — good for medication storage (${r.lux} lux).`});else m.push({l:'warn',t:`Light exposure (${r.lux} lux). Many medications degrade in light. Use a dark drawer.`});}
+      if(t!=null){const hi=u==='F'?77:25;if(t<(u==='F'?50:10))m.push({l:'warn',t:`Cold (${t}°${u}). Most medications shouldn't freeze.`});else if(t<=hi)m.push({l:'good',t:`Temperature is within the standard storage range (${t}°${u}).`});else m.push({l:'bad',t:`Too warm (${t}°${u}). Heat degrades most medications and vitamins.`});}
+      if(r.humidity!=null){if(r.humidity<=55)m.push({l:'good',t:`Dry enough for medication storage (${r.humidity}%).`});else m.push({l:'bad',t:`Humidity too high (${r.humidity}%). Moisture damages tablets and capsules. Avoid the bathroom.`});}
+      return m;},
+    riskCalc(r){const t=r.tempF??70,h=r.humidity??45,lux=r.lux??0;return{degradation:t>86?'high':lux>500?'medium':'low',moisture:h>70?'high':h>55?'medium':'low',heat:t>86?'high':t>77?'medium':'low'};}},
+
+  batteries:{id:'batteries',label:'Batteries',icon:'🔋',group:'Storage',desc:'Alkaline, lithium, rechargeable cells.',
+    factors:{light:.10,temp:.55,humidity:.35},
+    ranges:{light:{min:0,max:5000},tempF:{min:50,max:77},tempC:{min:10,max:25},humidity:{min:20,max:55}},
+    risks:{'Leakage / swelling':'heat','Corrosion':'moisture','Capacity loss':'cold'},
+    timeWarn:'Avoid storing batteries in cars or garages where temperatures swing widely between seasons.',
+    moveWhere:'A cool, dry drawer indoors — room temperature is ideal.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(t!=null){const lo=u==='F'?40:4.4,hi=u==='F'?77:25,hw=u==='F'?95:35;if(t<lo)m.push({l:'warn',t:`Cold (${t}°${u}). Cold reduces battery capacity temporarily.`});else if(t<=hi)m.push({l:'good',t:`Temperature is ideal for battery storage (${t}°${u}).`});else if(t<=hw)m.push({l:'warn',t:`Warm here (${t}°${u}). Heat shortens battery life over time.`});else m.push({l:'bad',t:`Too hot (${t}°${u}). Risk of leakage and swelling.`});}
+      if(r.humidity!=null){if(r.humidity<=55)m.push({l:'good',t:`Dry enough for batteries (${r.humidity}%).`});else m.push({l:'bad',t:`High humidity (${r.humidity}%). Moisture causes corrosion on contacts.`});}
+      return m;},
+    riskCalc(r){const t=r.tempF??70,h=r.humidity??45;return{heat:t>95?'high':t>77?'medium':'low',moisture:h>70?'high':h>55?'medium':'low',cold:t<40?'medium':'low'};}},
+
+  camera:{id:'camera',label:'Camera Gear',icon:'📷',group:'Storage',desc:'Cameras, lenses — cool, dry, controlled humidity.',
+    factors:{light:.20,temp:.35,humidity:.45},
+    ranges:{light:{min:0,max:500},tempF:{min:59,max:77},tempC:{min:15,max:25},humidity:{min:35,max:55}},
+    risks:{'Lens mold risk':'mold','Corrosion / circuit damage':'moisture','Lubricant breakdown':'heat'},
+    timeWarn:'Camera gear is sensitive to humidity swings. A sealed dry cabinet with silica gel maintains consistent conditions.',
+    moveWhere:'A sealed storage cabinet with desiccant (silica gel), away from humidity and temperature swings.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(t!=null){if(t<=(u==='F'?77:25))m.push({l:'good',t:`Good temperature for camera storage (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Heat breaks down lens lubricants over time.`});}
+      if(r.humidity!=null){if(r.humidity<35)m.push({l:'warn',t:`Very dry air (${r.humidity}%). Some camera lubricants need a little ambient moisture.`});else if(r.humidity<=55)m.push({l:'good',t:`Good humidity for camera storage (${r.humidity}%).`});else if(r.humidity<=70)m.push({l:'warn',t:`Humidity is high (${r.humidity}%). Use silica gel packets.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Fungus grows on lenses above 60%. Use a dry cabinet.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??45,t=r.tempF??70;return{mold:h>65?'high':h>55?'medium':'low',moisture:h>70?'high':h>55?'medium':'low',heat:t>85?'medium':'low'};}},
+
+  filament:{id:'filament',label:'3D Printer Filament',icon:'🧵',group:'Storage',desc:'PLA, ABS, PETG — moisture destroys print quality.',
+    factors:{light:.10,temp:.30,humidity:.60},
+    ranges:{light:{min:0,max:5000},tempF:{min:50,max:80},tempC:{min:10,max:26.7},humidity:{min:0,max:30}},
+    risks:{'Print quality failure':'moisture','Deformation / tangling':'heat','Brittleness':'cold'},
+    timeWarn:'Even a few hours in high humidity can ruin a spool. Store in sealed bags with desiccant when not in use.',
+    moveWhere:'A sealed container with silica gel desiccant, or a dedicated filament dry box.',
+    advice(r,u){const m=[];
+      if(r.humidity!=null){if(r.humidity<=30)m.push({l:'good',t:`Low humidity — ideal for filament (${r.humidity}%).`});else if(r.humidity<=50)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Use sealed bags with desiccant.`});else m.push({l:'bad',t:`Too humid for filament storage (${r.humidity}%). Moisture causes popping and weak prints.`});}
+      if(r.tempF!=null){const t=u==='F'?r.tempF:r.tempC,hi=u==='F'?80:26.7;if(t<=hi)m.push({l:'good',t:`Temperature is safe for filament storage (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). PLA can deform in storage above 85°F.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??45,t=r.tempF??70;return{moisture:h>50?'high':h>30?'medium':'low',heat:t>85?'high':t>80?'medium':'low',cold:t<40?'medium':'low'};}},
+
+  drying:{id:'drying',label:'Drying Clothes / Shoes',icon:'👟',group:'Utility',desc:'Wet laundry — warm, dry, and ventilated.',
+    factors:{light:.15,temp:.35,humidity:.50},
+    ranges:{light:{min:500,max:60000},tempF:{min:65,max:95},tempC:{min:18.3,max:35},humidity:{min:0,max:50}},
+    risks:{'Slow drying risk':'slow_dry','Mildew / odor risk':'odor','Heat damage':'damage'},
+    timeWarn:'Airflow matters more than any other single factor for drying. This score is an estimate without an airflow sensor.',
+    moveWhere:'Near a fan, open window, doorway, or ventilated area. Outdoors in sun and wind is ideal.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(!r.airflow)m.push({l:'warn',t:'Airflow sensor not connected. Drying score is an estimate — air movement matters a lot.'});
+      if(r.lux!=null&&r.lux>=1000)m.push({l:'good',t:`Good light or sun exposure (${r.lux} lux) — helps evaporation.`});
+      if(t!=null){if(t<(u==='F'?60:15.6))m.push({l:'bad',t:`Too cool to dry efficiently (${t}°${u}).`});else if(t<=(u==='F'?95:35))m.push({l:'good',t:`Good drying temperature (${t}°${u}).`});else m.push({l:'warn',t:`Very hot (${t}°${u}). Protect delicates and leather.`});}
+      if(r.humidity!=null){if(r.humidity<=50)m.push({l:'good',t:`Dry air — this spot dries clothes efficiently (${r.humidity}%).`});else if(r.humidity<=70)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). A fan speeds things up considerably.`});else m.push({l:'bad',t:`High humidity (${r.humidity}%). Clothes will dry slowly and may smell musty.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??50,t=r.tempF??72;return{slow_dry:h>70?'high':h>50?'medium':'low',odor:h>70?'high':h>50?'medium':'low',damage:t>95?'medium':'low'};}},
+
+  study:{id:'study',label:'Study Spot',icon:'📖',group:'Utility',desc:'Desk or reading area — comfortable light and temperature.',
+    factors:{light:.45,temp:.35,humidity:.20},
+    ranges:{light:{min:300,max:1500},tempF:{min:68,max:76},tempC:{min:20,max:24.4},humidity:{min:35,max:60}},
+    risks:{'Eye strain / glare':'glare','Comfort disruption':'heat','Dry air discomfort':'dryness'},
+    timeWarn:'Light levels shift as the sun moves. What works at 9 AM may create screen glare by 2 PM.',
+    moveWhere:'A desk positioned at 90° to the window — light from the side prevents screen glare.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<150)m.push({l:'bad',t:`Too dark for reading or desk work (${r.lux} lux). Add a lamp.`});else if(r.lux<=1500)m.push({l:'good',t:`Good light for a study spot (${r.lux} lux).`});else m.push({l:'warn',t:`Bright spot (${r.lux} lux). Direct sun may cause screen glare.`});}
+      if(t!=null){const lo=u==='F'?68:20,hi=u==='F'?76:24.4;if(t<lo)m.push({l:'warn',t:`A bit cool for focused work (${t}°${u}).`});else if(t<=hi)m.push({l:'good',t:`Comfortable temperature for a study spot (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Slightly elevated temperatures reduce concentration over time.`});}
+      if(r.humidity!=null){if(r.humidity<35)m.push({l:'warn',t:`Dry air (${r.humidity}%). Can cause eye and throat discomfort.`});else if(r.humidity<=60)m.push({l:'good',t:`Humidity is comfortable (${r.humidity}%).`});else m.push({l:'warn',t:`Humid here (${r.humidity}%). Can feel uncomfortable during long sessions.`});}
+      return m;},
+    riskCalc(r){const lux=r.lux??500,t=r.tempF??72;return{glare:lux>2000?'high':lux>1500?'medium':'low',heat:t>80?'medium':'low',dryness:r.humidity<30?'medium':'low'};}},
+
+  sleep:{id:'sleep',label:'Sleep Environment',icon:'🌙',group:'Utility',desc:'Bedroom — cool, dark, quiet, and stable.',
+    factors:{light:.30,temp:.40,humidity:.30},
+    ranges:{light:{min:0,max:50},tempF:{min:60,max:68},tempC:{min:15.6,max:20},humidity:{min:40,max:60}},
+    risks:{'Light disruption':'light','Restlessness risk':'heat','Noise disruption':'noise'},
+    timeWarn:'This reading is a daytime snapshot. Conditions change at night — blackout curtains and AC settings matter most.',
+    moveWhere:'Away from street-facing windows, with blackout curtains and a cool ambient temperature.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=50)m.push({l:'good',t:`Dark enough for sleep (${r.lux} lux).`});else if(r.lux<=200)m.push({l:'warn',t:`Some ambient light (${r.lux} lux). Blackout curtains make a significant difference.`});else m.push({l:'bad',t:`Too bright for sleep (${r.lux} lux). Light suppresses melatonin.`});}
+      if(t!=null){const lo=u==='F'?60:15.6,hi=u==='F'?68:20;if(t<lo)m.push({l:'warn',t:`A bit cold for sleep (${t}°${u}).`});else if(t<=hi)m.push({l:'good',t:`Temperature is in the optimal sleep range (${t}°${u}).`});else m.push({l:'bad',t:`Too warm for quality sleep (${t}°${u}). Lower the thermostat or use a fan.`});}
+      if(r.humidity!=null){if(r.humidity<40)m.push({l:'warn',t:`Dry air (${r.humidity}%). Can irritate airways during sleep.`});else if(r.humidity<=60)m.push({l:'good',t:`Comfortable humidity for sleep (${r.humidity}%).`});else m.push({l:'warn',t:`Humid here (${r.humidity}%). Can feel stuffy and disrupt sleep.`});}
+      if(r.sound!=null&&r.sound>45)m.push({l:'warn',t:`Sound level is elevated (${r.sound} dB). This may disrupt sleep quality.`});
+      return m;},
+    riskCalc(r){const lux=r.lux??0,t=r.tempF??66,snd=r.sound??30;return{light:lux>200?'high':lux>50?'medium':'low',heat:t>72?'high':t>68?'medium':'low',noise:snd>55?'high':snd>45?'medium':'low'};}},
+
+  mold:{id:'mold',label:'Mold-Risk Corner',icon:'🍄',group:'Utility',desc:'Check a corner or wall for mold risk factors.',
+    factors:{light:.10,temp:.20,humidity:.70},
+    ranges:{light:{min:0,max:100000},tempF:{min:0,max:75},tempC:{min:0,max:24},humidity:{min:0,max:55}},
+    risks:{'Mold growth risk':'mold','Surface condensation':'dampness','Air quality':'air'},
+    timeWarn:'A single reading may underestimate risk. Check early morning when humidity is typically highest.',
+    moveWhere:'Improve ventilation, add a dehumidifier, or seal exterior wall cracks to reduce condensation.',
+    advice(r,u){const m=[];
+      if(r.humidity!=null){if(r.humidity<55)m.push({l:'good',t:`Humidity is below the mold growth threshold (${r.humidity}%). Risk is low.`});else if(r.humidity<65)m.push({l:'warn',t:`Elevated humidity (${r.humidity}%). Mold can begin growing above 60%.`});else if(r.humidity<75)m.push({l:'bad',t:`High humidity (${r.humidity}%). Meaningful mold risk here. Improve ventilation or use a dehumidifier.`});else m.push({l:'bad',t:`Very high humidity (${r.humidity}%). Mold growth is likely. Investigate moisture sources.`});}
+      if(r.tempF!=null){const t=u==='F'?r.tempF:r.tempC,hi=u==='F'?75:24;if(t<hi)m.push({l:'warn',t:`Cool spot (${t}°${u}). Cold surfaces near warm moist air cause condensation — a primary mold trigger.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??50,t=r.tempF??70;return{mold:h>65?'high':h>55?'medium':'low',dampness:t<65&&h>50?'high':h>55?'medium':'low',air:h>70?'medium':'low'};}},
+
+  makeup:{id:'makeup',label:'Makeup / Skincare',icon:'💄',group:'Storage',desc:'Cosmetics, skincare — cool, dry, away from direct sun.',
+    factors:{light:.30,temp:.40,humidity:.30},
+    ranges:{light:{min:0,max:500},tempF:{min:60,max:75},tempC:{min:15.6,max:23.9},humidity:{min:20,max:55}},
+    risks:{'Heat / melting risk':'heat','UV degradation':'uv','Contamination risk':'moisture'},
+    timeWarn:'Bathroom cabinets fluctuate significantly during showers. Consistent heat and steam degrade most skincare formulas.',
+    moveWhere:'A cool, dry bedroom drawer or vanity away from the bathroom. Avoid windowsills and spots that heat up.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=500)m.push({l:'good',t:`Low light — good for makeup storage (${r.lux} lux).`});else if(r.lux<=2000)m.push({l:'warn',t:`Some light exposure (${r.lux} lux). UV degrades active ingredients in skincare over time.`});else m.push({l:'bad',t:`Direct light (${r.lux} lux). Move to a darker drawer or cabinet.`});}
+      if(t!=null){const hi=u==='F'?75:23.9;if(t<=(hi))m.push({l:'good',t:`Good cool temperature for cosmetics (${t}°${u}).`});else if(t<=(u==='F'?85:29.4))m.push({l:'warn',t:`Getting warm (${t}°${u}). Lip products, creams, and powders can melt or separate.`});else m.push({l:'bad',t:`Too warm (${t}°${u}). Makeup melts and skincare breaks down. Move somewhere cooler.`});}
+      if(r.humidity!=null){if(r.humidity<=55)m.push({l:'good',t:`Dry enough for cosmetics (${r.humidity}%).`});else m.push({l:'bad',t:`High humidity (${r.humidity}%). Bathroom steam contaminates products and shortens shelf life.`});}
+      return m;},
+    riskCalc(r){const t=r.tempF??70,h=r.humidity??45,lux=r.lux??0;return{heat:t>85?'high':t>75?'medium':'low',uv:lux>2000?'high':lux>500?'medium':'low',moisture:h>70?'high':h>55?'medium':'low'};}},
+
+  art_supplies:{id:'art_supplies',label:'Art Supplies',icon:'🎨',group:'Storage',desc:'Paints, brushes, paper, canvas — dry, moderate temperature.',
+    factors:{light:.20,temp:.35,humidity:.45},
+    ranges:{light:{min:0,max:2000},tempF:{min:55,max:78},tempC:{min:12.8,max:25.6},humidity:{min:20,max:50}},
+    risks:{'Mold on paper/canvas':'mold','Pigment degradation':'uv','Solvent evaporation':'heat'},
+    timeWarn:'Garages and basements have wide seasonal swings. Paint and adhesives are sensitive to freezing and extreme heat.',
+    moveWhere:'An interior shelf or closet with consistent temperature. Keep solvents and paints separated from paper and canvas.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=2000)m.push({l:'good',t:`Light level is fine for art supply storage (${r.lux} lux).`});else m.push({l:'warn',t:`Bright spot (${r.lux} lux). Direct UV fades pigments and yellows paper over time.`});}
+      if(t!=null){const lo=u==='F'?55:12.8,hi=u==='F'?78:25.6;if(t<lo)m.push({l:'warn',t:`Cold here (${t}°${u}). Acrylic paints can be permanently damaged by freezing.`});else if(t<=hi)m.push({l:'good',t:`Temperature is good for art supplies (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Solvent-based products evaporate faster and adhesives can dry out.`});}
+      if(r.humidity!=null){if(r.humidity<=50)m.push({l:'good',t:`Humidity is low — good for paper and canvas (${r.humidity}%).`});else if(r.humidity<=65)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Paper and canvas can warp; keep them flat and covered.`});else m.push({l:'bad',t:`High humidity (${r.humidity}%). Paper warps, mold grows on canvas, and brush bristles splay. Move to a drier spot.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??45,t=r.tempF??70,lux=r.lux??0;return{mold:h>65?'high':h>50?'medium':'low',uv:lux>2000?'medium':'low',heat:t>85?'medium':'low'};}},
+
+  board_games:{id:'board_games',label:'Board Games / Collectibles',icon:'🎲',group:'Storage',desc:'Games, cards, figurines, collectibles — dry, dark, stable.',
+    factors:{light:.30,temp:.20,humidity:.50},
+    ranges:{light:{min:0,max:300},tempF:{min:55,max:78},tempC:{min:12.8,max:25.6},humidity:{min:20,max:50}},
+    risks:{'Warping / buckling':'moisture','Fading':'uv','Adhesive failure':'heat'},
+    timeWarn:'Cardboard components are very sensitive to humidity cycles. A spot that wets and dries repeatedly causes permanent warping.',
+    moveWhere:'A sealed shelf or cabinet with consistent humidity. Plastic sleeves protect cards; bagged components stay flat.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=300)m.push({l:'good',t:`Dark enough for game and collectible storage (${r.lux} lux).`});else if(r.lux<=1500)m.push({l:'warn',t:`Some light (${r.lux} lux). Cover or box items to protect printed artwork from fading.`});else m.push({l:'bad',t:`Too bright (${r.lux} lux). UV fades printed artwork, card backs, and box art.`});}
+      if(t!=null){if(t<=(u==='F'?78:25.6))m.push({l:'good',t:`Temperature is stable for collectibles (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Heat softens adhesives and can warp plastic figures over time.`});}
+      if(r.humidity!=null){if(r.humidity<=50)m.push({l:'good',t:`Low humidity — good for cardboard and paper components (${r.humidity}%).`});else if(r.humidity<=65)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Cardboard components can absorb moisture and warp.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Cards warp, paper buckles, and boxes lose shape. Use silica gel or find a drier shelf.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??45,lux=r.lux??0,t=r.tempF??70;return{moisture:h>65?'high':h>50?'medium':'low',uv:lux>1500?'high':lux>300?'medium':'low',heat:t>85?'medium':'low'};}},
+
+  instruments:{id:'instruments',label:'Musical Instruments',icon:'🎸',group:'Storage',desc:'Guitars, violins, brass — humidity-sensitive, temperature-stable.',
+    factors:{light:.10,temp:.30,humidity:.60},
+    ranges:{light:{min:0,max:5000},tempF:{min:65,max:75},tempC:{min:18.3,max:23.9},humidity:{min:45,max:55}},
+    risks:{'Cracking / warping':'crack','Fret sprout':'humidity','Finish damage':'heat'},
+    timeWarn:`Wood instruments react to seasonal humidity changes. A spot that is fine in summer may cause cracking in dry winter air.`,
+    moveWhere:'An interior room away from exterior walls, heating vents, and air conditioning. Use a case humidifier for guitars and violins.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.humidity!=null){if(r.humidity<40)m.push({l:'bad',t:`Too dry for wood instruments (${r.humidity}%). Wood shrinks and can crack. Use a case humidifier immediately.`});else if(r.humidity<45)m.push({l:'warn',t:`A bit dry (${r.humidity}%). The ideal range for most instruments is 45–55%. Add a humidifier.`});else if(r.humidity<=55)m.push({l:'good',t:`Humidity is in the ideal range for wood instruments (${r.humidity}%).`});else if(r.humidity<=65)m.push({l:'warn',t:`Slightly humid (${r.humidity}%). Fret ends can protrude on guitars; watch for swelling in keys.`});else m.push({l:'bad',t:`Too humid (${r.humidity}%). Wood swells, glue joints can loosen. Remove the instrument and reduce humidity.`});}
+      if(t!=null){const lo=u==='F'?65:18.3,hi=u==='F'?75:23.9;if(t<lo)m.push({l:'warn',t:`Cool here (${t}°${u}). Strings can go sharp; let instruments warm up gradually before playing.`});else if(t<=hi)m.push({l:'good',t:`Temperature is stable for instruments (${t}°${u}).`});else m.push({l:'warn',t:`Warm here (${t}°${u}). Keep away from direct sunlight and heating vents.`});}
+      return m;},
+    riskCalc(r){const h=r.humidity??50,t=r.tempF??70;return{crack:h<40?'high':h<45?'medium':'low',humidity:h>65?'high':h>55?'medium':'low',heat:t>80?'medium':'low'};}},
+
+  food_pantry:{id:'food_pantry',label:'Food Pantry',icon:'🥫',group:'Storage',desc:'Dry goods, canned food, spices — cool, dark, dry.',
+    factors:{light:.20,temp:.45,humidity:.35},
+    ranges:{light:{min:0,max:500},tempF:{min:50,max:70},tempC:{min:10,max:21.1},humidity:{min:20,max:60}},
+    risks:{'Accelerated spoilage':'heat','Moisture / mold':'moisture','Pest risk':'unknown'},
+    timeWarn:'Kitchens heat up significantly during cooking. Pantry locations near ovens or stoves see temperature spikes that shorten shelf life.',
+    moveWhere:'An interior cabinet or dedicated pantry away from the stove, oven, and refrigerator heat. Lower shelves are usually cooler.',
+    advice(r,u){const m=[],t=u==='F'?r.tempF:r.tempC;
+      if(r.lux!=null){if(r.lux<=500)m.push({l:'good',t:`Good dark conditions for food storage (${r.lux} lux).`});else m.push({l:'warn',t:`Some light exposure (${r.lux} lux). Light accelerates oxidation in oils, spices, and grains.`});}
+      if(t!=null){const lo=u==='F'?50:10,hi=u==='F'?70:21.1;if(t<lo)m.push({l:'warn',t:`Cold here (${t}°${u}). Fine for most canned goods, but some items (oils, honey) can solidify.`});else if(t<=hi)m.push({l:'good',t:`Good pantry temperature (${t}°${u}). Dry goods and canned food store well here.`});else if(t<=(u==='F'?85:29.4))m.push({l:'warn',t:`Warm for pantry storage (${t}°${u}). Oils go rancid faster and spices lose potency.`});else m.push({l:'bad',t:`Too hot for food storage (${t}°${u}). Canned goods can expand and seal integrity degrades above 85°F.`});}
+      if(r.humidity!=null){if(r.humidity<=60)m.push({l:'good',t:`Humidity is acceptable for dry food storage (${r.humidity}%).`});else if(r.humidity<=70)m.push({l:'warn',t:`Moderate humidity (${r.humidity}%). Crackers, cereal, and flour absorb moisture. Use sealed containers.`});else m.push({l:'bad',t:`High humidity (${r.humidity}%). Dry goods clump, mold grows, and packaging softens. Move food to a drier cabinet.`});}
+      return m;},
+    riskCalc(r){const t=r.tempF??65,h=r.humidity??45;return{heat:t>85?'high':t>70?'medium':'low',moisture:h>70?'high':h>60?'medium':'low',unknown:'unknown'};}},
+
+  custom:{id:'custom',label:'Custom',icon:'⚙️',group:'Custom',desc:'User-defined ideal conditions and weights.',
+    factors:{light:.33,temp:.34,humidity:.33},
+    ranges:{light:{min:200,max:2000},tempF:{min:65,max:78},tempC:{min:18.3,max:25.6},humidity:{min:35,max:60}},
+    risks:{'Light exposure':'light_risk','Temperature':'temp_risk','Humidity':'humidity_risk'},
+    timeWarn:'This reading only reflects the current moment. Check again at different times of day.',
+    moveWhere:'Adjust the ideal ranges in Settings to reflect your object, then test multiple locations.',
+    advice(r,u,cfg){const ranges=(cfg&&cfg.ranges)||this.ranges,m=[],t=u==='F'?r.tempF:r.tempC,tr=u==='F'?ranges.tempF:ranges.tempC;
+      if(r.lux!=null){const s=SR(r.lux,ranges.light.min,ranges.light.max);m.push({l:s>=75?'good':s>=45?'warn':'bad',t:`Light: ${r.lux} lux (target ${ranges.light.min}–${ranges.light.max} lux).`});}
+      if(t!=null){const s=SR(t,tr.min,tr.max);m.push({l:s>=75?'good':s>=45?'warn':'bad',t:`Temperature: ${t}°${u} (target ${tr.min}–${tr.max}°${u}).`});}
+      if(r.humidity!=null){const s=SR(r.humidity,ranges.humidity.min,ranges.humidity.max);m.push({l:s>=75?'good':s>=45?'warn':'bad',t:`Humidity: ${r.humidity}% (target ${ranges.humidity.min}–${ranges.humidity.max}%).`});}
+      return m;},
+    riskCalc(r){return{light_risk:'unknown',temp_risk:'unknown',humidity_risk:'unknown'};}},
+};
+// ═══════════════════════════════════════════════════════
+//  SCORING HELPERS
+// ═══════════════════════════════════════════════════════
+function SR(val,min,max,p=1.4){if(val==null)return null;if(val>=min&&val<=max)return 100;const s=(max-min)||1;if(val<min)return Math.max(0,Math.round(100-((min-val)/s)*100*p));return Math.max(0,Math.round(100-((val-max)/s)*100*p));}
+function WS(parts){let t=0,w=0;for(const{s,wt}of parts){if(s===null)continue;t+=s*wt;w+=wt;}return w>0?Math.round(t/w):null;}
+function verdict(s){if(s===null)return'Waiting';if(s>=75)return'Optimal';if(s>=45)return'Acceptable';return'Not Recommended';}
+function cToF(c){return+(c*9/5+32).toFixed(1);}
+function fToC(f){return+((f-32)*5/9).toFixed(1);}
+function computeScore(profileId,reading,unit,customCfg,penalty){
+  const p=PROFILES[profileId];if(!p)return null;
+  const pen=penalty??1.4;
+  const ranges=(profileId==='custom'&&customCfg?.ranges)?customCfg.ranges:p.ranges;
+  const factors=(profileId==='custom'&&customCfg?.factors)?customCfg.factors:p.factors;
+  const t=unit==='F'?reading.tempF:reading.tempC;
+  const tr=unit==='F'?ranges.tempF:ranges.tempC;
+  const ls=SR(reading.lux,ranges.light.min,ranges.light.max,pen);
+  const ts=t!=null?SR(t,tr.min,tr.max,pen):null;
+  const hs=SR(reading.humidity,ranges.humidity.min,ranges.humidity.max,pen);
+  const score=WS([{s:ls,wt:factors.light},{s:ts,wt:factors.temp},{s:hs,wt:factors.humidity}]);
+  return{score,verdict:verdict(score),advice:p.advice(reading,unit,customCfg),
+         partials:{light:ls,temp:ts,humidity:hs},note:p.note||null,
+         risks:p.riskCalc?p.riskCalc(reading):null};}
+
+// ═══════════════════════════════════════════════════════
+//  SENSOR
+// ═══════════════════════════════════════════════════════
+function normalize(raw){if(!raw)return null;
+  const tF=raw.temperatureF??raw.tempF??(raw.temperatureC!=null?cToF(raw.temperatureC):null);
+  const tC=raw.temperatureC??raw.tempC??(raw.temperatureF!=null?fToC(raw.temperatureF):null);
+  return{lux:raw.lux??raw.light??null,tempF:tF,tempC:tC,humidity:raw.humidity??null,
+         sound:raw.sound??null,airflow:raw.airflow??null,timestamp:raw.timestamp??new Date().toISOString()};}
+let _simT=0,_simTimer=null,_pollTimer=null;
+function startSim(cb,ms=1300){clearInterval(_simTimer);_simT=0;
+  _simTimer=setInterval(()=>{_simT+=0.16;
+    const tC=+(22+Math.sin(_simT*.4)*1.8+(Math.random()-.5)*.3).toFixed(1);
+    cb(normalize({timestamp:new Date().toISOString(),
+      lux:Math.max(0,+(900+Math.sin(_simT*.7)*300+(Math.random()-.5)*80).toFixed(0)),
+      temperatureC:tC,temperatureF:cToF(tC),
+      humidity:Math.max(0,Math.min(100,+(50+Math.sin(_simT*.3)*8+(Math.random()-.5)*3).toFixed(1))),
+      sound:Math.max(0,+(38+Math.sin(_simT*.9)*6+(Math.random()-.5)*3).toFixed(1)),airflow:null}));},ms);}
+function stopSim(){clearInterval(_simTimer);_simTimer=null;}
+function startPoll(url,onRead,onStatus,ms=2000){clearInterval(_pollTimer);
+  const go=async()=>{try{const r=await fetch(url,{signal:AbortSignal.timeout(3000)});if(!r.ok)throw new Error(`HTTP ${r.status}`);onStatus({ok:true});onRead(normalize(await r.json()));}catch(e){onStatus({ok:false,err:e.message});}};
+  go();_pollTimer=setInterval(go,ms);}
+function stopPoll(){clearInterval(_pollTimer);_pollTimer=null;}
+function readManual(unit){
+  const n=id=>{const v=parseFloat(document.getElementById(id)?.value);return isNaN(v)?null:v;};
+  const tF=unit==='F'?n('m-tempF'):(n('m-tempC')!=null?cToF(n('m-tempC')):null);
+  const tC=unit==='C'?n('m-tempC'):(n('m-tempF')!=null?fToC(n('m-tempF')):null);
+  return normalize({lux:n('m-lux'),temperatureF:tF,temperatureC:tC,humidity:n('m-humidity'),sound:n('m-sound')});}
+
+
+// ═══════════════════════════════════════════════════════
+//  TIMEZONE
+// ═══════════════════════════════════════════════════════
+const TZ_KEY='sp4_timezone';
+const TZ_ZONES=[
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'America/Phoenix','America/Anchorage','Pacific/Honolulu',
+  'America/Toronto','America/Vancouver','America/Sao_Paulo','America/Argentina/Buenos_Aires',
+  'Europe/London','Europe/Paris','Europe/Berlin','Europe/Rome','Europe/Madrid',
+  'Europe/Amsterdam','Europe/Stockholm','Europe/Warsaw','Europe/Istanbul',
+  'Europe/Moscow','Africa/Lagos','Africa/Nairobi','Africa/Johannesburg',
+  'Africa/Cairo','Asia/Dubai','Asia/Kolkata','Asia/Dhaka','Asia/Bangkok',
+  'Asia/Singapore','Asia/Shanghai','Asia/Tokyo','Asia/Seoul',
+  'Australia/Sydney','Australia/Melbourne','Australia/Perth','Pacific/Auckland',
+];
+
+let _timezone = (() => {
+  const saved = localStorage.getItem(TZ_KEY);
+  if(saved) return saved;
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; }
+})();
+
+function saveTimezone(tz) {
+  _timezone = tz;
+  try { localStorage.setItem(TZ_KEY, tz); } catch {}
+}
+
+function formatInTZ(isoString, tz) {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: true,
+    }).format(new Date(isoString));
+  } catch { return new Date(isoString).toLocaleString(); }
+}
+
+function liveTimeInTZ(tz) {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    }).format(new Date());
+  } catch { return ''; }
+}
+
+function buildTZSelector() {
+  const sel = document.getElementById('tz-select');
+  if(!sel) return;
+  sel.innerHTML = TZ_ZONES.map(tz => {
+    const time = liveTimeInTZ(tz);
+    return `<option value="${tz}"${tz===_timezone?' selected':''}>${tz.replace(/_/g,' ')} — ${time}</option>`;
+  }).join('');
+  updateTZDisplay();
+}
+
+function updateTZDisplay() {
+  const el = document.getElementById('tz-current');
+  if(el) el.textContent = `Current time in ${_timezone}: ${liveTimeInTZ(_timezone)}`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STORAGE
+// ═══════════════════════════════════════════════════════
+const SK='sp4_spots',CK='sp4_custom',DK='sp4_device';
+let _spots=[];
+try{_spots=JSON.parse(localStorage.getItem(SK)||'[]');}catch{}
+function saveSpots(s){try{localStorage.setItem(SK,JSON.stringify(s));}catch{}}
+function loadCustom(){try{return JSON.parse(localStorage.getItem(CK)||'null');}catch{return null;}}
+function saveCustom(c){try{localStorage.setItem(CK,JSON.stringify(c));}catch{}}
+function loadUrl(){return localStorage.getItem(DK)||'';}
+function saveUrl(u){try{localStorage.setItem(DK,u);}catch{}}
+
+function doExportCSV(spots){
+  if(!spots.length)return;
+  const cols=[
+    ['timestampUTC','Timestamp (UTC)'],
+    ['localTime','Local Time'],
+    ['timezone','Timezone'],
+    ['source','Source'],
+    ['name','Spot Name'],
+    ['profileLabel','Object Type'],
+    ['score','Score'],
+    ['verdict','Verdict'],
+    ['lux','Light (lux)'],
+    ['tempF','Temp (°F)'],
+    ['tempC','Temp (°C)'],
+    ['humidity','Humidity (%)'],
+    ['sound','Sound (dB)'],
+    ['note','Notes'],
+  ];
+  const esc=v=>{const s=String(v??'');return(s.includes(',')||s.includes('"'))?`"${s.replace(/"/g,'""')}"`  :s;};
+  const csv=[cols.map(c=>c[1]).join(','),...spots.map(s=>cols.map(c=>esc(s[c[0]])).join(','))].join('\n');
+  const a=Object.assign(document.createElement('a'),{href:'data:text/csv;charset=utf-8,'+encodeURIComponent(csv),download:`smartplace-${Date.now()}.csv`});a.click();}
+
+
+// ═══════════════════════════════════════════════════════
+//  HISTORY + STABILITY
+// ═══════════════════════════════════════════════════════
+const HN=60;
+let _hist={lux:[],tempF:[],tempC:[],humidity:[]};
+function pushHist(r){['lux','tempF','tempC','humidity'].forEach(k=>{_hist[k].push(r[k]);if(_hist[k].length>HN)_hist[k].shift();});}
+function calcStability(unit){
+  const keys=unit==='F'?['lux','tempF','humidity']:['lux','tempC','humidity'];
+  const cvs=keys.map(k=>{const vals=_hist[k].filter(v=>v!=null);if(vals.length<5)return null;
+    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const sd=Math.sqrt(vals.map(v=>(v-mean)**2).reduce((a,b)=>a+b,0)/vals.length);
+    const ranges={lux:1000,tempF:10,tempC:5,humidity:15};
+    return Math.min(1,(sd/(ranges[k]||10)));}).filter(v=>v!==null);
+  if(!cvs.length)return null;
+  return Math.max(0,Math.round(100-(cvs.reduce((a,b)=>a+b,0)/cvs.length)*100*2));}
+
+// ═══════════════════════════════════════════════════════
+//  UI MODULE
+// ═══════════════════════════════════════════════════════
+const UI=(()=>{
+  function buildSidebar(selectedId,isBestSpot){
+    const groups={};
+    Object.values(PROFILES).forEach(p=>{if(!groups[p.group])groups[p.group]=[];groups[p.group].push(p);});
+    const el=document.getElementById('sb-categories');el.innerHTML='';
+    const catIcon={'Plants':'🌿','Storage':'📦','Utility':'🛠','Custom':'⚙️'};
+    const openDefault={'Plants':true,'Storage':true,'Utility':false,'Custom':true};
+    Object.entries(groups).forEach(([group,items])=>{
+      const isOpen=openDefault[group]??false;
+      const sec=document.createElement('div');sec.className='sb-section';
+      const cat=document.createElement('div');cat.className='sb-cat';
+      cat.innerHTML=`<div class="sb-cat-left"><span class="sb-cat-icon">${catIcon[group]||'•'}</span><span class="sb-cat-label">${group}</span></div><span class="sb-chevron ${isOpen?'open':''}">▶</span>`;
+      const itemsEl=document.createElement('div');itemsEl.className='sb-items'+(isOpen?' open':'');
+      items.forEach(p=>{
+        const row=document.createElement('div');row.className='sb-item'+((!isBestSpot&&p.id===selectedId)?' active':'');
+        row.innerHTML=`<span class="sb-item-icon">${p.icon}</span><span class="sb-item-label">${p.label}</span>`;
+        row.onclick=()=>App.selectProfile(p.id);
+        itemsEl.appendChild(row);});
+      cat.onclick=()=>{const ch=cat.querySelector('.sb-chevron');ch.classList.toggle('open');itemsEl.classList.toggle('open');};
+      sec.appendChild(cat);sec.appendChild(itemsEl);el.appendChild(sec);});
+    document.getElementById('sb-bestspot').classList.toggle('active',isBestSpot);}
+
+  function buildTileContainer(cid,unit){
+    const keys=unit==='F'
+      ?[{k:'lux',l:'Light',u:'lux'},{k:'tempF',l:'Temp',u:'°F'},{k:'humidity',l:'Humidity',u:'%'},{k:'sound',l:'Sound',u:'dB'}]
+      :[{k:'lux',l:'Light',u:'lux'},{k:'tempC',l:'Temp',u:'°C'},{k:'humidity',l:'Humidity',u:'%'},{k:'sound',l:'Sound',u:'dB'}];
+    const el=document.getElementById(cid);if(!el)return;
+    el.innerHTML=keys.map(k=>`<div class="rtile" id="tile-${cid}-${k.k}"><div class="rtile-name">${k.l}</div><div><span class="rtile-val" id="rv-${cid}-${k.k}">—</span><span class="rtile-unit">${k.u}</span></div><div class="rtile-plain" id="rp-${cid}-${k.k}"></div></div>`).join('');}
+
+  function updateTiles(cid,reading,unit,partials){
+    const plain={lux:v=>v<200?'Very dark':v<800?'Dim':v<5000?'Bright':'Very bright',tempF:v=>v<55?'Cold':v<65?'Cool':v<80?'Comfortable':'Warm',tempC:v=>v<13?'Cold':v<18?'Cool':v<27?'Comfortable':'Warm',humidity:v=>v<30?'Very dry':v<50?'Dry':v<70?'Normal':'Humid',sound:v=>v<30?'Quiet':v<50?'Moderate':'Loud'};
+    const smap={lux:'light',tempF:'temp',tempC:'temp',humidity:'humidity'};
+    const keys=unit==='F'?['lux','tempF','humidity','sound']:['lux','tempC','humidity','sound'];
+    keys.forEach(k=>{
+      const tile=document.getElementById(`tile-${cid}-${k}`);
+      const valEl=document.getElementById(`rv-${cid}-${k}`);
+      const plainEl=document.getElementById(`rp-${cid}-${k}`);
+      if(!tile||!valEl)return;
+      const val=reading[k];if(val==null)return;
+      const prev=valEl.textContent;
+      valEl.textContent=typeof val==='number'?(+val).toFixed(1).replace(/\.0$/,''):val;
+      if(prev!==valEl.textContent){valEl.style.opacity='.3';requestAnimationFrame(()=>{valEl.style.transition='opacity .2s';valEl.style.opacity='1';});}
+      if(plainEl&&plain[k])plainEl.textContent=plain[k](val);
+      const sk=smap[k],ps=sk&&partials?partials[sk]:null;
+      tile.className='rtile'+(ps!==null?(ps>=75?' opt':ps>=45?' acc':' bad'):'');});}
+
+  const CIRC=2*Math.PI*46;
+  function updateScore(score,vrd){
+    const arc=document.getElementById('ring-fill');const num=document.getElementById('score-num');
+    const vrdEl=document.getElementById('score-verdict');const badgeEl=document.getElementById('score-badge');
+    const reasonEl=document.getElementById('score-reason');
+    if(score===null){arc.style.strokeDashoffset=CIRC;arc.style.stroke='var(--stroke2)';num.style.color='var(--ink3)';num.textContent='—';vrdEl.textContent='Place the sensor, then analyze.';vrdEl.style.color='var(--ink3)';badgeEl.className='score-badge waiting';badgeEl.textContent='Waiting';reasonEl.textContent='';return;}
+    const off=CIRC-(score/100)*CIRC;arc.style.strokeDashoffset=off;
+    let color,cls,reason;
+    if(score>=75){color='var(--green)';cls='optimal';reason='This spot meets the conditions for this object.';}
+    else if(score>=45){color='var(--amber)';cls='acceptable';reason='This spot works but one or more conditions are off. See recommendations.';}
+    else{color='var(--red)';cls='not-rec';reason='Conditions here are outside the ideal range. Move the object and test again.';}
+    arc.style.stroke=color;num.textContent=score;num.style.color=color;
+    vrdEl.textContent=vrd;vrdEl.style.color=color;
+    badgeEl.className=`score-badge ${cls}`;badgeEl.textContent=vrd;reasonEl.textContent=reason;}
+
+  function updatePartials(partials){
+    const el=document.getElementById('partials');
+    el.innerHTML=[{k:'light',l:'Light'},{k:'temp',l:'Temp'},{k:'humidity',l:'Humidity'}].map(it=>{
+      const s=partials[it.k];const pct=s??0;
+      const col=s===null?'var(--stroke2)':s>=75?'var(--green)':s>=45?'var(--amber)':'var(--red)';
+      return`<div class="partial-item"><div class="partial-label">${it.l}</div><div class="partial-score-val" style="color:${col}">${s!==null?s:'—'}</div><div class="partial-bar"><div class="partial-fill" style="width:${pct}%;background:${col}"></div></div></div>`;}).join('');}
+
+  function updateAdvice(msgs,note){
+    const el=document.getElementById('advice-list');
+    if(!msgs?.length){el.innerHTML='<div class="adv warn"><span class="adv-icon">💡</span><span>Run an analysis to see recommendations.</span></div>';return;}
+    const icon={good:'✅',warn:'⚠️',bad:'❌'};
+    el.innerHTML=msgs.map(m=>`<div class="adv ${m.l}"><span class="adv-icon">${icon[m.l]||'•'}</span><span>${m.t}</span></div>`).join('');
+    if(note)el.innerHTML+=`<div class="adv-note">ℹ️ ${note}</div>`;}
+
+  function updateRisks(risks,profileRisks){
+    const el=document.getElementById('risk-grid');
+    if(!risks||!profileRisks){el.innerHTML='<p style="font-size:10px;color:var(--ink3);font-family:var(--mono)">Risks appear after the first analysis.</p>';return;}
+    el.innerHTML=Object.entries(profileRisks).map(([label,key])=>{
+      const lvl=risks[key]||'unknown';
+      return`<div class="risk-row"><span class="risk-label">${label}</span><span class="risk-badge ${lvl}">${lvl.charAt(0).toUpperCase()+lvl.slice(1)}</span></div>`;}).join('');}
+
+  function updateStability(score){
+    const el=document.getElementById('stab-score');const fill=document.getElementById('stab-fill');const note=document.getElementById('stab-note');
+    if(score===null){if(el)el.textContent='—';return;}
+    if(el)el.textContent=score;
+    if(fill){const col=score>=75?'var(--green)':score>=45?'var(--amber)':'var(--red)';fill.style.width=score+'%';fill.style.background=col;}
+    if(note){if(score>=75)note.textContent='Conditions are steady over the last 60 readings.';else if(score>=45)note.textContent='Some fluctuation detected. Conditions are changing — check again later.';else note.textContent='Conditions are changing significantly. This reading may not reflect the typical state of this spot.';}}
+
+  function buildSparklines(unit){
+    const area=document.getElementById('spark-area');if(!area)return;
+    const keys=unit==='F'?[{k:'lux',l:'Light',u:'lux'},{k:'tempF',l:'Temp',u:'°F'},{k:'humidity',l:'Humidity',u:'%'}]:[{k:'lux',l:'Light',u:'lux'},{k:'tempC',l:'Temp',u:'°C'},{k:'humidity',l:'Humidity',u:'%'}];
+    area.innerHTML=keys.map(k=>`<div class="spark-row"><div class="spark-lbl"><span>${k.l}</span><span class="spark-cur" id="scur-${k.k}">—</span></div><canvas class="spark" id="spark-${k.k}"></canvas></div>`).join('');}
+
+  function renderSparklines(unit){
+    const keys=unit==='F'?['lux','tempF','humidity']:['lux','tempC','humidity'];
+    const units={lux:'lux',tempF:'°F',tempC:'°C',humidity:'%'};
+    keys.forEach(k=>{
+      const canvas=document.getElementById(`spark-${k}`);if(!canvas)return;
+      const dpr=window.devicePixelRatio||1;const W=canvas.offsetWidth*dpr,H=canvas.offsetHeight*dpr;
+      if(!W||!H)return;
+      canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);
+      const vals=_hist[k].filter(v=>v!=null);
+      const cur=document.getElementById(`scur-${k}`);if(cur&&vals.length)cur.textContent=`${vals[vals.length-1]} ${units[k]}`;
+      if(vals.length<2)return;
+      const mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1,step=W/(HN-1);
+      const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'rgba(26,122,74,.16)');grad.addColorStop(1,'rgba(26,122,74,0)');
+      ctx.beginPath();vals.forEach((v,i)=>{const off=HN-vals.length,x=(i+off)*step,y=H-((v-mn)/rng)*(H*.8)-H*.1;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+      ctx.strokeStyle='rgba(26,122,74,.5)';ctx.lineWidth=1.5;ctx.stroke();
+      const lx=(vals.length-1+HN-vals.length)*step;ctx.lineTo(lx,H);ctx.lineTo((HN-vals.length)*step,H);ctx.closePath();ctx.fillStyle=grad;ctx.fill();});}
+
+  function buildManualFields(unit){
+    const el=document.getElementById('panel-manual');if(!el)return;
+    const flds=[{id:'m-lux',l:'Light level',u:'lux',ph:'e.g. 500'},{id:unit==='F'?'m-tempF':'m-tempC',l:'Temperature',u:`°${unit}`,ph:unit==='F'?'e.g. 72':'e.g. 22'},{id:'m-humidity',l:'Humidity',u:'%',ph:'e.g. 45'},{id:'m-sound',l:'Sound (optional)',u:'dB',ph:'e.g. 40'}];
+    el.innerHTML=flds.map(f=>`<div class="sf-row"><label class="sf-label">${f.l} <span class="text-mono text-dim" style="font-size:9px">${f.u}</span></label><input class="sf-input" id="${f.id}" type="number" placeholder="${f.ph}" min="0"/></div>`).join('');
+    el.innerHTML+=`<button class="analyze-btn" onclick="App.analyzeManual()">Analyze This Spot</button>`;}
+
+  function buildObjectHeader(profile,ctx){
+    const el=document.getElementById('obj-header');if(!el)return;
+    el.innerHTML=`<div class="obj-header-left"><span class="obj-big-icon">${profile.icon}</span><div><div class="obj-title">${profile.label}</div><div class="obj-desc">${profile.desc}</div></div></div>`;
+    const strip=document.getElementById('context-strip');
+    if(strip){strip.innerHTML=`<div class="ctx-chip${ctx.airflow?' set':''}" id="chip-airflow" onclick="UI.openCtxModal('airflow')">💨 Airflow: ${ctx.airflow||'tap to set'}</div><div class="ctx-chip${ctx.location?' set':''}" id="chip-location" onclick="UI.openCtxModal('location')">📍 Location: ${ctx.location||'tap to set'}</div>`;}}
+
+  function updateContextChips(ctx){
+    const af=document.getElementById('chip-airflow');const lc=document.getElementById('chip-location');
+    if(af){af.textContent=`💨 Airflow: ${ctx.airflow||'tap to set'}`;af.classList.toggle('set',!!ctx.airflow);}
+    if(lc){lc.textContent=`📍 Location: ${ctx.location||'tap to set'}`;lc.classList.toggle('set',!!ctx.location);}}
+
+  function updateTimeWarn(profile,ctx){
+    const card=document.getElementById('time-warn-card');const content=document.getElementById('time-warn-content');
+    if(!card||!content)return;
+    const show=profile.timeWarn&&(!ctx.location||ctx.location==='windowsill'||ctx.location==='desk');
+    if(show){card.style.display='block';content.innerHTML=`<span style="font-size:13px;flex-shrink:0">⏰</span><span>${profile.timeWarn}</span>`;}
+    else card.style.display='none';}
+
+  function updateMoveWhere(profile,score){
+    const card=document.getElementById('move-where-card');
+    const text=document.getElementById('move-where-text');
+    if(!card||!text)return;
+    // Show if score is below optimal and profile has moveWhere
+    if(profile.moveWhere&&score!==null&&score<75){
+      card.style.display='block';
+      text.textContent=profile.moveWhere;
+    } else {card.style.display='none';}}
+
+  function updateStorageTips(profile){
+    const card=document.getElementById('storage-tips-card');
+    const list=document.getElementById('storage-tips-list');
+    if(!card||!list)return;
+    // Storage-specific general tips — shown for storage group only
+    const storageTips={
+      fragility:  {icon:'🫧', text:`Fragile items — ceramics, electronics, glass, and models — need cushioning and a stable location where they cannot fall.`},
+      cleanliness:{icon:'🧹', text:'Store items clean and dry. Dirt, moisture, and food residue cause long-term damage inside sealed storage.'},
+      chemicals:  {icon:'⚠️', text:'Keep batteries, paint, solvents, and fuel separated from food, paper, and clothing. Leaks damage everything nearby.'},
+    };
+    const groups=['cologne','candle','electronics','books','medicine','batteries','camera','filament','makeup','art_supplies','board_games','instruments','food_pantry'];
+    if(groups.includes(profile.id)){
+      card.style.display='block';
+      list.innerHTML=Object.values(storageTips).map(t=>`<div class="storage-tip"><span class="storage-tip-icon">${t.icon}</span><span>${t.text}</span></div>`).join('');
+    } else {card.style.display='none';}}
+
+  function updateBestSpot(reading,unit){
+    const results=Object.values(PROFILES).map(p=>{
+      const ranges=p.ranges;const factors=p.factors;
+      const t=unit==='F'?reading.tempF:reading.tempC;const tr=unit==='F'?ranges.tempF:ranges.tempC;
+      const score=WS([{s:SR(reading.lux,ranges.light.min,ranges.light.max),wt:factors.light},{s:t!=null?SR(t,tr.min,tr.max):null,wt:factors.temp},{s:SR(reading.humidity,ranges.humidity.min,ranges.humidity.max),wt:factors.humidity}]);
+      return{...p,score};}).sort((a,b)=>(b.score||0)-(a.score||0));
+    const good=results.filter(r=>r.score>=65),poor=results.filter(r=>r.score<45);
+    const gEl=document.getElementById('bs-good'),pEl=document.getElementById('bs-poor');
+    const tsEl=document.getElementById('bs-ts'),sumEl=document.getElementById('bs-summary');
+    if(tsEl)tsEl.textContent=new Date(reading.timestamp).toLocaleTimeString();
+    if(gEl)gEl.innerHTML=good.length?good.map(r=>`<div class="scan-tile good-fit"><div class="scan-tile-header"><span class="scan-icon">${r.icon}</span><span class="scan-label">${r.label}</span></div><div class="scan-score">${r.score}/100</div></div>`).join(''):'<p style="font-size:10px;color:var(--ink3);font-family:var(--mono)">No objects score above 65 here yet.</p>';
+    if(pEl)pEl.innerHTML=poor.slice(0,6).map(r=>`<div class="scan-tile poor-fit"><div class="scan-tile-header"><span class="scan-icon">${r.icon}</span><span class="scan-label">${r.label}</span></div><div class="scan-score">${r.score}/100</div></div>`).join('');
+    if(sumEl){
+      const top=good.slice(0,4).map(r=>`${r.icon} ${r.label}`).join(', ');
+      const bot=poor.slice(0,3).map(r=>r.label).join(', ');
+      sumEl.textContent=top?`This spot suits: ${top}.${bot?' Not ideal for: '+bot+'.':''}` : 'Nothing scores well here yet — keep collecting readings.';}}
+
+  function renderLog(spots){
+    const body=document.getElementById('log-body');const count=document.getElementById('log-count');
+    count.textContent=`${spots.length} spot${spots.length!==1?'s':''} saved`;
+    if(!spots.length){body.innerHTML='<tr class="empty-row"><td colspan="9">No spots saved yet.</td></tr>';document.getElementById('compare-section').style.display='none';return;}
+    const vc={'Optimal':'optimal','Acceptable':'acceptable','Not Recommended':'not-rec'};
+    body.innerHTML=spots.map(s=>`<tr><td style="color:var(--ink);font-weight:500">${s.name}</td><td>${s.profileLabel}</td><td class="score-cell">${s.score??'—'}</td><td><span class="verdict-badge ${vc[s.verdict]||''}">${s.verdict}</span></td><td style="font-family:var(--mono)">${s.lux!=null?s.lux+' lux':'—'}</td><td style="font-family:var(--mono)">${s.tempF!=null?s.tempF+'°F':'—'}</td><td style="font-family:var(--mono)">${s.humidity!=null?s.humidity+'%':'—'}</td><td style="font-size:11px;color:var(--ink2)">${s.localTime||s.savedAt||'—'}</td><td style="font-size:10px;color:var(--ink3);font-family:var(--mono)">${s.timezone||'—'}</td><td><span style="font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:99px;background:var(--inset);color:var(--ink3)">${s.source||'—'}</span></td><td><button class="btn btn-ghost btn-sm" onclick="App.deleteSpot(${s.id})" style="color:var(--red)">Remove</button></td></tr>`).join('');
+    const sec=document.getElementById('compare-section');const grid=document.getElementById('compare-grid');
+    if(sec&&grid){sec.style.display='block';
+      // Find best overall and group by object type
+      const byProfile={};
+      spots.forEach(s=>{if(!byProfile[s.profileId]||s.score>byProfile[s.profileId].score)byProfile[s.profileId]=s;});
+      const best=spots.reduce((a,b)=>(a.score||0)>(b.score||0)?a:b);
+      grid.innerHTML=spots.slice(0,8).map(s=>{
+        const isBest=s.id===best.id;
+        const isBestForObj=byProfile[s.profileId]?.id===s.id&&spots.filter(x=>x.profileId===s.profileId).length>1;
+        const col=s.score>=75?'var(--green)':s.score>=45?'var(--amber)':'var(--red)';
+        return`<div class="cmp-card${isBest?' best':''}"><div class="cmp-name">${s.name}</div><div class="cmp-obj">${s.profileLabel}</div><div class="cmp-score" style="color:${col}">${s.score??'—'}</div><div class="cmp-verdict" style="color:${col}">${s.verdict}</div>${isBest?'<div class="cmp-best-tag">★ Best overall</div>':''}${(isBestForObj&&!isBest)?'<div class="cmp-best-tag" style="color:var(--amber)">★ Best for '+s.profileLabel+'</div>':''}</div>`;}).join('');
+      // Best-spot-per-object summary
+      const summaries=Object.values(byProfile).filter(s=>spots.filter(x=>x.profileId===s.profileId).length>1);
+      if(summaries.length){
+        const summaryHtml=summaries.map(s=>`<span style="font-family:var(--mono);font-size:10px;color:var(--ink2)"><strong>${s.profileLabel}:</strong> ${s.name} (${s.score})</span>`).join(' &nbsp;·&nbsp; ');
+        const existing=document.getElementById('compare-summary');
+        if(existing)existing.innerHTML=summaryHtml;
+        else{const d=document.createElement('div');d.id='compare-summary';d.style.cssText='margin-top:10px;padding:10px 12px;background:var(--raised);border:1px solid var(--stroke);border-radius:var(--r-sm);display:flex;flex-wrap:wrap;gap:8px;';d.innerHTML=summaryHtml;sec.appendChild(d);}
+      }}}
+
+  const CTX_OPT={
+    airflow:[{v:'none',icon:'🚫',t:'No airflow'},{v:'some',icon:'🌬',t:'Some airflow'},{v:'strong',icon:'💨',t:'Strong airflow'},{v:'unknown',icon:'❓',t:'Unknown'}],
+    location:[{v:'windowsill',icon:'🪟',t:'Windowsill'},{v:'closet',icon:'🚪',t:'Closet'},{v:'shelf',icon:'📦',t:'Shelf'},{v:'drawer',icon:'🗄',t:'Drawer'},{v:'desk',icon:'🖥',t:'Desk'},{v:'floor',icon:'⬛',t:'Floor'},{v:'bathroom',icon:'🚿',t:'Bathroom'},{v:'garage',icon:'🏠',t:'Garage'},{v:'outdoor',icon:'🌿',t:'Outdoor'}]};
+  let _pendingCtx={};
+  function openCtxModal(type){const el=document.getElementById(`ctx-modal-${type}`);if(!el)return;const body=document.getElementById(`ctx-body-${type}`);const cur=App.getCtx()[type];
+    body.innerHTML=CTX_OPT[type].map(o=>`<div class="ctx-option${cur===o.v?' selected':''}" onclick="UI.selectCtxOption('${type}','${o.v}',this)"><span class="ctx-option-icon">${o.icon}</span><span class="ctx-option-text">${o.t}</span></div>`).join('');
+    _pendingCtx[type]=cur;el.classList.add('open');}
+  function selectCtxOption(type,val,el){_pendingCtx[type]=val;document.querySelectorAll(`#ctx-body-${type} .ctx-option`).forEach(e=>e.classList.remove('selected'));el.classList.add('selected');}
+  function confirmCtxModal(type){App.setCtx(type,_pendingCtx[type]);closeCtxModal(type);}
+  function closeCtxModal(type){document.getElementById(`ctx-modal-${type}`)?.classList.remove('open');}
+  function openConnModal(){document.getElementById('m-device-url').value=loadUrl();document.getElementById('conn-modal').classList.add('open');}
+  function closeConnModal(){document.getElementById('conn-modal').classList.remove('open');}
+
+  function loadCustomForm(cfg,unit){
+    const sv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v??'';};
+    sv('c-light-min',cfg.ranges.light.min);sv('c-light-max',cfg.ranges.light.max);
+    sv('c-temp-min',unit==='F'?cfg.ranges.tempF.min:cfg.ranges.tempC.min);
+    sv('c-temp-max',unit==='F'?cfg.ranges.tempF.max:cfg.ranges.tempC.max);
+    sv('c-hum-min',cfg.ranges.humidity.min);sv('c-hum-max',cfg.ranges.humidity.max);
+    const lbl=document.getElementById('c-temp-lbl');if(lbl)lbl.textContent=`Temp (°${unit})`;
+    const tot=(cfg.factors.light+cfg.factors.temp+cfg.factors.humidity)||1;
+    ['light','temp','hum'].forEach((k,i)=>{const el=document.getElementById(`w-${k}`);if(el)el.value=Math.round([cfg.factors.light,cfg.factors.temp,cfg.factors.humidity][i]/tot*100);});
+    updateWeightDisplay();}
+
+  function readCustomForm(unit){
+    const n=id=>{const v=parseFloat(document.getElementById(id)?.value);return isNaN(v)?null:v;};
+    const tMin=n('c-temp-min'),tMax=n('c-temp-max');
+    const wL=n('w-light')||33,wT=n('w-temp')||34,wH=n('w-hum')||33,tot=(wL+wT+wH)||1;
+    const tempF=unit==='F'?{min:tMin,max:tMax}:{min:tMin!=null?cToF(tMin):null,max:tMax!=null?cToF(tMax):null};
+    const tempC=unit==='C'?{min:tMin,max:tMax}:{min:tMin!=null?fToC(tMin):null,max:tMax!=null?fToC(tMax):null};
+    return{ranges:{light:{min:n('c-light-min'),max:n('c-light-max')},tempF,tempC,humidity:{min:n('c-hum-min'),max:n('c-hum-max')}},factors:{light:wL/tot,temp:wT/tot,humidity:wH/tot}};}
+
+  function updateWeightDisplay(){
+    const n=id=>{const el=document.getElementById(id);return el?parseInt(el.value):0;};
+    const wL=n('w-light'),wT=n('w-temp'),wH=n('w-hum'),tot=(wL+wT+wH)||1;
+    ['light','temp','hum'].forEach((k,i)=>{const el=document.getElementById(`wd-${k}`);if(el)el.textContent=Math.round([wL,wT,wH][i]/tot*100)+'%';});}
+
+  return{buildSidebar,buildTileContainer,updateTiles,updateScore,updatePartials,updateAdvice,updateRisks,updateStability,buildSparklines,renderSparklines,buildManualFields,buildObjectHeader,updateContextChips,updateTimeWarn,updateMoveWhere,updateStorageTips,updateBestSpot,renderLog,loadCustomForm,readCustomForm,updateWeightDisplay,openCtxModal,selectCtxOption,confirmCtxModal,closeCtxModal,openConnModal,closeConnModal};
+})();
+// ═══════════════════════════════════════════════════════
+//  APP CONTROLLER
+// ═══════════════════════════════════════════════════════
+const App=(()=>{
+  let _menuOpen=false;
+  let _profileId='plant_standard';
+  let _unit='F';
+  let _mode='sim';
+  let _isBestSpot=true;
+  let _reading=null;
+  let _lastResult=null;
+  let _customCfg=loadCustom()||{ranges:{light:{min:200,max:2000},tempF:{min:65,max:78},tempC:{min:18.3,max:25.6},humidity:{min:35,max:60}},factors:{light:.33,temp:.34,humidity:.33}};
+  let _ctx={airflow:null,location:null};
+  let _sidebarOpen=false;
+  let _lastHz=null;
+
+  function init(){
+    UI.buildSidebar(_profileId,_isBestSpot);
+    UI.buildTileContainer('readings-grid',_unit);
+    UI.buildTileContainer('bs-readings',_unit);
+    UI.buildSparklines(_unit);
+    UI.loadCustomForm(_customCfg,_unit);
+    const url=loadUrl();
+    ['s-device-url','m-device-url'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=url;});
+    renderLog();
+    startSim(_onReading);
+    switchPage('home',document.getElementById('tnav-home'));
+    document.getElementById('sb-home')?.classList.add('active');
+    buildTZSelector();
+    // Refresh timezone display every 30s so live times stay accurate
+    setInterval(()=>{buildTZSelector();updateTZDisplay();},30000);
+    ['conn-modal','ctx-modal-airflow','ctx-modal-location'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});});
+    document.addEventListener('click',e=>{
+      const wrap=document.getElementById('pages-wrap');
+      if(_menuOpen&&wrap&&!wrap.contains(e.target)){closePagesMenu();}});}
+
+  function _updateHomePreview(r){
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+    // Use plant_standard as the demo profile for the preview card
+    const result=computeScore('plant_standard',r,_unit,null,1.4);
+    const t=_unit==='F'?r.tempF:r.tempC;
+    set('hp-lux',r.lux!=null?Math.round(r.lux):'—');
+    set('hp-temp',t!=null?t.toFixed(1):'—');
+    set('hp-hum',r.humidity!=null?r.humidity.toFixed(1):'—');
+    if(result){
+      set('hp-score',result.score??'—');
+      const vEl=document.getElementById('hp-verdict');
+      if(vEl){vEl.textContent=result.verdict;vEl.style.background=result.score>=75?'var(--green-bg)':result.score>=45?'var(--amber-bg)':'var(--red-bg)';vEl.style.color=result.score>=75?'var(--green)':result.score>=45?'var(--amber)':'var(--red)';vEl.style.borderColor=result.score>=75?'var(--green-bd)':result.score>=45?'var(--amber-bd)':'var(--red-bd)';}
+      const scoreEl=document.getElementById('hp-score');
+      if(scoreEl)scoreEl.style.color=result.score>=75?'var(--green)':result.score>=45?'var(--amber)':'var(--red)';
+      const advEl=document.getElementById('hp-advice');
+      if(advEl&&result.advice&&result.advice.length){
+        const first=result.advice.find(a=>a.l==='bad')||result.advice.find(a=>a.l==='warn')||result.advice[0];
+        if(first)advEl.textContent=first.t;
+      }
+    }
+  }
+
+  function _onReading(r){
+    _reading=r;pushHist(r);
+    const now=Date.now();
+    if(_lastHz){const hz=(1000/(now-_lastHz)).toFixed(1);const el=document.getElementById('hz-lbl');if(el)el.textContent=`~${hz}/s`;}
+    _lastHz=now;
+    const ts=document.getElementById('score-ts');if(ts)ts.textContent=new Date(r.timestamp).toLocaleTimeString();
+
+    // Update home preview card from simulator
+    _updateHomePreview(r);
+
+    if(_isBestSpot){
+      UI.updateBestSpot(r,_unit);
+      UI.buildTileContainer('bs-readings',_unit);
+      UI.updateTiles('bs-readings',r,_unit,{});
+    }else{
+      const result=computeScore(_profileId,r,_unit,_profileId==='custom'?_customCfg:null,getSensitivityPenalty());
+      if(result){_lastResult=result;
+        UI.updateScore(result.score,result.verdict);
+        UI.updatePartials(result.partials);
+        UI.updateAdvice(result.advice,result.note);
+        UI.updateRisks(result.risks,PROFILES[_profileId]?.risks);
+        UI.updateStability(calcStability(_unit));
+        UI.updateMoveWhere(PROFILES[_profileId],result.score);
+        UI.updateStorageTips(PROFILES[_profileId]);}
+      UI.updateTiles('readings-grid',r,_unit,_lastResult?.partials||{});}
+    UI.renderSparklines(_unit);}
+
+  function _setModePill(mode){
+    const pill=document.getElementById('mode-pill');if(!pill)return;
+    pill.className='mode-pill';
+    if(mode==='sim'){pill.classList.add('sim');pill.textContent='Simulated';}
+    else if(mode==='live'){pill.classList.add('live-mode');pill.textContent='Live';}
+    else{pill.classList.add('manual-mode');pill.textContent='Manual';}}
+
+  function setMode(mode){
+    _mode=mode;
+    ['sim','manual','live'].forEach(m=>{document.getElementById(`smt-${m}`)?.classList.toggle('active',m===mode);document.getElementById(`panel-${m}`)?.classList.toggle('hidden',m!==mode);});
+    _setModePill(mode);
+    if(mode==='sim'){stopPoll();startSim(_onReading);}
+    else if(mode==='manual'){stopSim();stopPoll();}
+    else if(mode==='live'){stopSim();connectDevice();}}
+
+  function analyzeManual(){const r=readManual(_unit);if(r)_onReading(r);}
+
+  function selectProfile(id){
+    _isBestSpot=false;_profileId=id;
+    // ensure checker page is active
+    const checkerPage=document.getElementById('page-checker');
+    if(!checkerPage.classList.contains('active')){
+      switchPage('checker',document.getElementById('tnav-checker'));}
+    document.getElementById('view-bestspot').classList.add('hidden');
+    document.getElementById('view-object').classList.remove('hidden');
+    UI.buildSidebar(id,false);
+    UI.buildObjectHeader(PROFILES[id],_ctx);
+    UI.updateTimeWarn(PROFILES[id],_ctx);
+    UI.updateMoveWhere(PROFILES[id],null);
+    UI.updateStorageTips(PROFILES[id]);
+    UI.buildTileContainer('readings-grid',_unit);
+    if(_reading)_onReading(_reading);}
+
+  function selectBestSpot(){
+    _isBestSpot=true;
+    const checkerPage=document.getElementById('page-checker');
+    if(!checkerPage.classList.contains('active')){
+      switchPage('checker',document.getElementById('tnav-checker'));}
+    document.getElementById('view-bestspot').classList.remove('hidden');
+    document.getElementById('view-object').classList.add('hidden');
+    document.querySelectorAll('.sb-special').forEach(b=>b.classList.remove('active'));
+    document.getElementById('sb-bestspot')?.classList.add('active');
+    UI.buildSidebar(_profileId,true);
+    if(_reading)_onReading(_reading);}
+
+  function setUnit(u){
+    _unit=u;
+    // sync reading-settings chips
+    document.getElementById('rc-F')?.classList.toggle('active',u==='F');
+    document.getElementById('rc-C')?.classList.toggle('active',u==='C');
+    UI.buildTileContainer('readings-grid',u);UI.buildTileContainer('bs-readings',u);
+    UI.buildSparklines(u);UI.renderSparklines(u);
+    UI.loadCustomForm(_customCfg,u);UI.buildManualFields(u);
+    const lbl=document.getElementById('c-temp-lbl');if(lbl)lbl.textContent=`Temp (°${u})`;
+    if(!_isBestSpot&&_reading)_onReading(_reading);}
+
+
+  function switchPage(name,btn){
+    document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');p.style.display='none';});
+    document.querySelectorAll('.topnav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.pages-menu-item').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.sb-special').forEach(b=>b.classList.remove('active'));
+    const pg=document.getElementById(`page-${name}`);
+    if(pg){pg.style.display='block';pg.classList.add('active');}
+    const tnav=document.getElementById(`tnav-${name}`);
+    if(tnav)tnav.classList.add('active');
+    const pmenu=document.getElementById(`pmenu-${name}`);
+    if(pmenu)pmenu.classList.add('active');
+    if(name==='home')document.getElementById('sb-home')?.classList.add('active');
+    closePagesMenu();
+    if(name==='log')renderLog();}
+
+  function togglePagesMenu(){
+    _menuOpen=!_menuOpen;
+    const btn=document.getElementById('pages-btn');
+    const menu=document.getElementById('pages-menu');
+    const chev=document.getElementById('pages-chevron');
+    if(btn)btn.classList.toggle('open',_menuOpen);
+    if(menu)menu.classList.toggle('open',_menuOpen);
+    if(chev)chev.style.transform=_menuOpen?'rotate(180deg)':'';
+  }
+  function closePagesMenu(){
+    _menuOpen=false;
+    document.getElementById('pages-menu')?.classList.remove('open');
+    document.getElementById('pages-btn')?.classList.remove('open');
+    const chev=document.getElementById('pages-chevron');
+    if(chev)chev.style.transform='';
+  }
+  function toggleMobileMenu(){togglePagesMenu();}
+  function toggleSidebar(){
+    _sidebarOpen=!_sidebarOpen;
+    document.getElementById('sidebar')?.classList.toggle('open',_sidebarOpen);
+    document.getElementById('sidebar-overlay')?.classList.toggle('open',_sidebarOpen);
+    document.getElementById('hamburger')?.classList.toggle('open',_sidebarOpen);
+  }
+
+  function saveSpot(){
+    if(!_reading||!_lastResult){alert('Analyze a spot first before saving.');return;}
+    const name=document.getElementById('spot-name')?.value.trim()||`Spot ${_spots.length+1}`;
+    const note=document.getElementById('spot-note')?.value.trim()||'';
+    const nowUTC=new Date().toISOString();
+    const rec={
+      id:Date.now(),
+      timestampUTC:nowUTC,
+      localTime:formatInTZ(nowUTC,_timezone),
+      timezone:_timezone,
+      source:_mode==='live'?'sensor':_mode==='manual'?'manual':'simulated',
+      name,note,
+      profileId:_profileId,
+      profileLabel:PROFILES[_profileId]?.label||_profileId,
+      score:_lastResult.score,verdict:_lastResult.verdict,unit:_unit,
+      lux:_reading.lux,tempF:_reading.tempF,tempC:_reading.tempC,
+      humidity:_reading.humidity,sound:_reading.sound,
+    };
+    _spots=[rec,..._spots];saveSpots(_spots);
+    document.getElementById('spot-name').value='';document.getElementById('spot-note').value='';}
+
+  function deleteSpot(id){_spots=_spots.filter(s=>s.id!==id);saveSpots(_spots);renderLog();}
+  function clearLog(){if(!confirm('Remove all saved spots?'))return;_spots=[];saveSpots(_spots);renderLog();}
+  function exportCSV(){doExportCSV(_spots);}
+  function renderLog(){UI.renderLog(_spots);}
+
+  function connectDevice(){
+    const url=(document.getElementById('m-device-url')?.value||document.getElementById('s-device-url')?.value||'').trim();
+    if(!url){alert('Enter the ESP32 endpoint URL.');return;}
+    saveUrl(url);stopSim();stopPoll();
+    document.getElementById('cdot').className='cdot';document.getElementById('conn-label').textContent='Connecting…';
+    _setModePill('live');
+    startPoll(url,_onReading,s=>{
+      if(s.ok){document.getElementById('cdot').className='cdot live';document.getElementById('conn-label').textContent='Live';_setModePill('live');const el=document.getElementById('live-status');if(el)el.textContent='Connected — reading live data.';}
+      else{document.getElementById('cdot').className='cdot error';document.getElementById('conn-label').textContent='Offline';const el=document.getElementById('live-status');if(el)el.textContent=`Offline — ${s.err||'no response'}. Check the URL.`;}});}
+
+  function enableSim(){stopPoll();_setModePill('sim');document.getElementById('cdot').className='cdot sim';document.getElementById('conn-label').textContent='Simulated';setMode('sim');}
+
+  function setTimezone(tz){saveTimezone(tz);updateTZDisplay();}
+
+  function saveCustomConfig(){const cfg=UI.readCustomForm(_unit);_customCfg=cfg;saveCustom(cfg);if(_profileId==='custom'&&_reading)_onReading(_reading);alert('Custom profile saved.');}
+  function resetCustomConfig(){_customCfg={ranges:{light:{min:200,max:2000},tempF:{min:65,max:78},tempC:{min:18.3,max:25.6},humidity:{min:35,max:60}},factors:{light:.33,temp:.34,humidity:.33}};saveCustom(_customCfg);UI.loadCustomForm(_customCfg,_unit);}
+
+  function getCtx(){return _ctx;}
+  function setCtx(type,val){_ctx[type]=val;if(!_isBestSpot){UI.updateContextChips(_ctx);UI.updateTimeWarn(PROFILES[_profileId],_ctx);}}
+
+  function setCtxDirect(type,val){
+    // toggle: clicking the active chip clears it
+    _ctx[type]=(_ctx[type]===val)?null:val;
+    // update chip active states
+    const containerId=type==='location'?'rc-location-chips':'rc-airflow-chips';
+    const container=document.getElementById(containerId);
+    if(container){container.querySelectorAll('.rc-chip').forEach(chip=>{
+      const chipVal=chip.getAttribute('onclick')?.match(/'([^']+)'\)$/)?.[1];
+      chip.classList.toggle('active-green',chipVal===_ctx[type]);});}
+    if(!_isBestSpot){UI.updateContextChips(_ctx);UI.updateTimeWarn(PROFILES[_profileId],_ctx);}
+    if(_reading)_onReading(_reading);}
+
+  let _sensitivity='standard';
+  function setSensitivity(level){
+    _sensitivity=level;
+    ['low','standard','high'].forEach(l=>{
+      document.getElementById(`rc-sens-${l}`)?.classList.toggle('active',l===level);});
+    if(_reading)_onReading(_reading);}
+
+  function getSensitivityPenalty(){
+    if(_sensitivity==='low')return 0.8;
+    if(_sensitivity==='high')return 2.0;
+    return 1.4;}
+
+  return{init,setMode,setUnit,setTimezone,switchPage,toggleSidebar,togglePagesMenu,closePagesMenu,toggleMobileMenu,selectProfile,selectBestSpot,analyzeManual,saveSpot,deleteSpot,clearLog,exportCSV,connectDevice,enableSim,saveCustomConfig,resetCustomConfig,getCtx,setCtx,setCtxDirect,setSensitivity,getSensitivityPenalty};
+})();
+
+window.addEventListener('DOMContentLoaded',()=>{App.init();});
+</script>
+</body>
+</html>
