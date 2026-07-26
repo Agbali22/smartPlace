@@ -1,10 +1,18 @@
 # smartPlace
 
-SmartPlace is an environmental monitoring and recommendation engine designed to help users find the best locations for plants and sensitive household items. It processes real-time sensor data and analyzes light, temperature, humidity, and related conditions to deliver actionable placement advice.
+SmartPlace is an environmental monitoring and recommendation engine for finding the best placement for plants and sensitive household items. It turns raw sensor readings into structured data, evaluates them against target ranges, and returns a clear recommendation score with actionable advice.
 
-## Quick Start
+## Why this project exists
 
-Start by cloning the repository and running the tests.
+SmartPlace helps answer a practical question: "Is this location suitable for a plant, artwork, medication, or other environment-sensitive item?"
+
+It combines:
+
+- sensor normalization and unit conversion
+- range-based scoring for light, temperature, and humidity
+- weighted recommendations with clear verdicts like Optimal, Acceptable, or Not Recommended
+
+## Quick start
 
 ```bash
 git clone https://github.com/Agbali22/smartPlace.git
@@ -13,11 +21,11 @@ npm install
 npm test
 ```
 
-If the tests pass, the core logic is working and you can explore the scoring system.
+If the test suite passes, the core engine is working and you can start experimenting with the scoring logic.
 
-## Interactive Usage Example
+## Example usage
 
-Use the library directly in Node to normalize a sensor payload and compute a recommendation score.
+The following example shows how to normalize a reading and compute a placement score in Node.js:
 
 ```js
 import { normalizeReading } from './src/domain/sensor.js';
@@ -31,9 +39,7 @@ const profile = {
     humidity: { min: 40, max: 65 },
   },
   factors: { light: 0.6, temp: 0.25, humidity: 0.15 },
-  advice: (reading, unit) => [
-    `Keep light between ${unit === 'F' ? '500-2500 lux' : '500-2500 lux'}`,
-  ],
+  advice: () => ['Keep light between 500 and 2500 lux'],
 };
 
 const rawReading = {
@@ -53,7 +59,7 @@ console.log(result);
 {
   "score": 100,
   "verdict": "Optimal",
-  "advice": ["Keep light between 500-2500 lux"],
+  "advice": ["Keep light between 500 and 2500 lux"],
   "partials": {
     "light": 100,
     "temp": 100,
@@ -62,50 +68,47 @@ console.log(result);
 }
 ```
 
-## Explore the code
+## Project structure
 
-Use these sections to interactively inspect the project:
+- [src/domain/sensor.js](src/domain/sensor.js)
+  - `normalizeReading()` converts raw sensor payloads into a consistent structure
+  - `cToF()` and `fToC()` handle temperature unit conversion
+- [src/domain/scoring.js](src/domain/scoring.js)
+  - `scoreRange()` assigns a score based on how close a value is to a target range
+  - `weightedScore()` combines factor scores by importance
+  - `getVerdict()` maps a score to a readable recommendation
+  - `computeScore()` returns the final score, verdict, advice, partials, and optional notes/risks
+- [test/domain.test.js](test/domain.test.js)
+  - Covers normalization, temperature conversion, scoring, and verdict logic
 
-- `src/domain/sensor.js`
-  - `normalizeReading()` converts raw sensor payloads into a consistent shape
-  - `cToF()` and `fToC()` convert temperature units
-- `src/domain/scoring.js`
-  - `scoreRange()` applies range-based scoring
-  - `weightedScore()` combines scores by importance
-  - `getVerdict()` maps numeric scores to readable results
-  - `computeScore()` returns score, verdict, advice, partials, notes, and risks
+## Run the tests
 
-## Run targeted checks
+Use the test suite to validate behavior as you make changes:
 
-Try these interactive checks in your terminal to see coverage of project behavior.
-
-- Validate temperature conversion:
-  ```bash
-  npm test -- --runInBand
-  ```
-- Explore the scoring logic by reading `src/domain/scoring.js`
-- Extend the profile with new factors and test the impact
+```bash
+npm test
+```
 
 ## Extend and experiment
 
-Use this flow to interact with the system:
+A simple workflow for exploring the engine:
 
-1. Update `profile.ranges` or `profile.factors`
+1. Adjust `profile.ranges` or `profile.factors`
 2. Add a new sensor alias or field in `normalizeReading()`
-3. Run `npm test`
-4. Check the computed `verdict` and `partials`
+3. Run the tests again
+4. Compare the updated `verdict` and `partials`
 
-## Contribution
+## Contributing
 
-Contributions are welcome. Here are some interactive ideas:
+Contributions are welcome. Good starter ideas include:
 
-- Add a new sensor normalization in `src/domain/sensor.js`
-- Create a custom profile for a new plant type or household item
-- Add a sample CLI or web interface that consumes the scoring library
-- Add tests under `test/` for any new behavior
+- adding new sensor normalization rules
+- creating profiles for new plant types or household items
+- building a small CLI or web UI around the scoring engine
+- adding tests for new behavior
 
 ## Notes
 
-- The project is configured as an ES module (`type: module`)
-- The scoring logic handles missing input gracefully and still returns useful recommendations
+- The project uses ES modules via `"type": "module"`
+- Missing measurements are handled gracefully and still return useful guidance
 - The repository is currently focused on the domain engine and testable logic
